@@ -1,19 +1,35 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import datetime
+import json
+from github import Github
 
 st.set_page_config(page_title="Dosya Takip Sistemi", layout="centered")
 
 st.title("📁 Dosya İşlem Kayıt Sistemi")
 
-# Google Sheets Bağlantısı
-conn = st.connection("gsheets", type=GSheetsConnection)
+# --- GITHUB BAGLANTISI VE VERİ OKUMA ---
+GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
+REPO_NAME = st.secrets["REPO_NAME"]
+FILE_PATH = st.secrets["FILE_PATH"]
 
-# Mevcut veriyi çekme
-try:
-    df = conn.read(ttl=0)
-except Exception:
+g = Github(GITHUB_TOKEN)
+repo = g.get_repo(REPO_NAME)
+
+def verileri_getir():
+    try:
+        file_content = repo.get_contents(FILE_PATH)
+        data = json.loads(file_content.decoded_content.decode('utf-8'))
+        return data, file_content.sha
+    except Exception as e:
+        return [], None
+
+kayitlar, file_sha = verileri_getir()
+
+# DataFrame oluşturma
+if kayitlar:
+    df = pd.DataFrame(kayitlar)
+else:
     df = pd.DataFrame(columns=["Tarih", "Dosya No", "Yapılan İşlem"])
 
 # --- KAYIT FORMU ---
@@ -26,21 +42,34 @@ with st.form("kayit_formu", clear_on_submit=True):
 
     if submit:
         if dosya_no.strip() != "" and islem.strip() != "":
-            # Otomatik Tarih ve Saat alma
+            # Otomatik Tarih alma
             simdi = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
-            # Yeni veriyi hazırlama
-            yeni_veri = pd.DataFrame([{
+            yeni_kayit = {
                 "Tarih": simdi,
                 "Dosya No": dosya_no,
                 "Yapılan İşlem": islem
-            }])
+            }
             
-            # Var olan tabloyla birleştirip Google Sheets'e yazma
-            updated_df = pd.concat([df, yeni_veri], ignore_index=True)
-            conn.update(data=updated_df)
+            kayitlar.append(yeni_kayit)
+            yeni_json_icerik = json.dumps(kayitlar, ensure_ascii=False, indent=2)
             
-            st.success(f"'{dosya_no}' numaralı dosya işlemi başarıyla kaydedildi!")
+            # GitHub üzerindeki dosyayı güncelleme (Commit)
+            if file_sha:
+                repo.update_file(
+                    path=FILE_PATH,
+                    message=f"Yeni kayıt eklendi: {dosya_no}",
+                    content=yeni_json_icerik,
+                    sha=file_sha
+                )
+            else:
+                repo.create_file(
+                    path=FILE_PATH,
+                    message=f"Veri dosyası oluşturuldu ve kayıt eklendi: {dosya_no}",
+                    content=yeni_json_icerik
+                )
+            
+            st.success(f"'{dosya_no}' numaralı dosya işlemi başarıyla GitHub'a kaydedildi!")
             st.rerun()
         else:
             st.warning("Lütfen tüm alanları doldurun.")
@@ -49,7 +78,6 @@ with st.form("kayit_formu", clear_on_submit=True):
 st.divider()
 st.subheader("📋 Geçmiş Kayıtlar")
 
-# Arama / Filtreleme
 arama = st.text_input("Dosya No ile Arama Yap", "")
 
 if not df.empty:
