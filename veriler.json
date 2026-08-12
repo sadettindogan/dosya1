@@ -599,7 +599,7 @@
     "KapatmaRed": false,
     "TescildeBekleyen": false,
     "KapatmaAsamasinda": false,
-    "YaziCevabiBekleyen": false,
+    "YaziCevabiBekleyen": true,
     "Incelenmedi": false,
     "MailAtildi": false,
     "MailTarihi": ""
