@@ -104,8 +104,20 @@ with col_left:
                 if edit_key not in st.session_state:
                     st.session_state[edit_key] = False
 
-                with st.expander(f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} ({len(islemler)} İşlem Adımı)", expanded=False):
-                    
+                # SAĞ TARAFA DOSYAYI SİL BUTONU EKLEME DÜZENİ
+                col_exp, col_dosya_sil = st.columns([8, 2], vertical_alignment="center")
+                
+                with col_exp:
+                    exp_container = st.expander(f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} ({len(islemler)} İşlem Adımı)", expanded=False)
+                
+                with col_dosya_sil:
+                    if st.button("🗑️ Dosyayı Sil", key=f"del_dosya_btn_{d_no}_{d_idx}", use_container_width=True, help="Bu dosyayı tüm bilgileriyle sil"):
+                        kayitlar.remove(dosya)
+                        verileri_kaydet(kayitlar, f"{d_no} nolu dosya tamamen silindi")
+                        st.success(f"'{d_no}' dosyası silindi!")
+                        st.rerun()
+
+                with exp_container:
                     # --- DÜZENLENEBİLİR DOSYA AÇIKLAMASI ALANI ---
                     st.markdown("##### 📝 Dosya Açıklaması")
                     
