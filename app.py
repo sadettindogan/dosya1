@@ -5,10 +5,16 @@ import json
 import pytz
 from github import Github
 
-# Sayfa Yapılandırması (Sol menünün rahat görünmesi için wide yapıldı)
-st.set_page_config(page_title="Dosya Takip Sistemi", layout="wide")
+# Sayfa Yapılandırması (Geniş Ekran)
+st.set_page_config(
+    page_title="Dosya Takip Portalı", 
+    page_icon="📁",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-st.title("📁 Dosya İşlem Kayıt Sistemi")
+st.title("📁 Dosya İşlem ve Takip Portalı")
+st.markdown("---")
 
 # --- GITHUB BAĞLANTISI VE VERİ OKUMA ---
 GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
@@ -66,106 +72,128 @@ def verileri_kaydet(yeni_kayitlar, mesaj):
 
 kayitlar = verileri_getir()
 
-# --- SOL TARAF (SIDEBAR) - KAYITLI DOSYALAR VE GEÇMİŞ ---
-st.sidebar.header("📋 Kayıtlı Dosyalar")
+# EKRAN YAPILANDIRMASI: Sol Taraf %68 (Büyük Takip Alanı), Sağ Taraf %32 (Hızlı İşlem Paneli)
+col_left, col_right = st.columns([68, 32], gap="large")
 
-arama = st.sidebar.text_input("Dosya No ile Arama Yap", "")
-
-if kayitlar:
-    sirali_dosyalar = sorted(kayitlar, key=lambda x: x.get("OlusturmaTarihi", ""), reverse=True)
+# ==============================================================================
+# SOL TARAF: GENİŞ DOSYA LİSTESİ VE GEÇMİŞ İŞLEMLER
+# ==============================================================================
+with col_left:
+    st.subheader("📋 Kayıtlı Dosyalar ve İşlem Akışı")
     
-    if arama:
-        gosterilecek_dosyalar = [d for d in sirali_dosyalar if arama.lower() in str(d.get("Dosya No", "")).lower()]
-    else:
-        gosterilecek_dosyalar = sirali_dosyalar
+    arama = st.text_input("🔍 Dosya No ile Filtrele / Ara", "", placeholder="Örn: 1001")
 
-    if gosterilecek_dosyalar:
-        for d_idx, dosya in enumerate(gosterilecek_dosyalar):
-            d_no = dosya.get("Dosya No")
-            islemler = dosya.get("Islemler", [])
-            
-            with st.sidebar.expander(f"📁 **Dosya No: {d_no}** ({len(islemler)} İşlem)", expanded=False):
-                
-                # Sol menü içindeki işlem ekleme formu
-                with st.form(key=f"add_islem_form_side_{d_no}_{d_idx}", clear_on_submit=True):
-                    yeni_islem_text = st.text_input("Bu dosyaya kayıt ekle", key=f"inp_{d_no}_{d_idx}")
-                    submit_islem = st.form_submit_button("➕ Ekle")
-                    
-                    if submit_islem:
-                        if yeni_islem_text.strip() != "":
-                            turkey_tz = pytz.timezone("Europe/Istanbul")
-                            simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
-                            
-                            islemler.append({
-                                "Aciklama": yeni_islem_text.strip(),
-                                "Tarih": simdi
-                            })
-                            
-                            verileri_kaydet(kayitlar, f"{d_no} dosyasına yeni işlem eklendi")
-                            st.success("İşlem eklendi!")
-                            st.rerun()
-                        else:
-                            st.warning("Açıklama girin.")
-
-                st.markdown("**Geçmiş Kayıtlar:**")
-                
-                for i_idx, item in enumerate(islemler):
-                    col_info, col_del = st.columns([4, 1])
-                    
-                    with col_info:
-                        st.markdown(f"**{i_idx + 1}.** {item.get('Aciklama')}")
-                        st.caption(f"🕒 {item.get('Tarih')}")
-                    
-                    with col_del:
-                        if st.button("🗑️", key=f"del_side_{d_no}_{i_idx}"):
-                            islemler.pop(i_idx)
-                            
-                            if len(islemler) == 0:
-                                kayitlar.remove(dosya)
-                                
-                            verileri_kaydet(kayitlar, f"{d_no} dosyasından işlem silindi")
-                            st.success("Silindi!")
-                            st.rerun()
-                    
-                    if i_idx < len(islemler) - 1:
-                        st.divider()
-    else:
-        st.sidebar.info("Aramanıza uygun dosya bulunamadı.")
-else:
-    st.sidebar.info("Henüz kayıtlı dosya bulunmuyor.")
-
-# --- SAĞ TARAF (ANA EKRAN) - YENİ DOSYA OLUŞTURMA ---
-st.subheader("➕ Yeni Dosya Oluştur")
-
-with st.form("yeni_dosya_formu", clear_on_submit=True):
-    dosya_no = st.text_input("Dosya No")
-    islem = st.text_area("İlk İşlem / Açıklama")
-    submit_yeni = st.form_submit_button("Dosyayı Kaydet")
-
-    if submit_yeni:
-        if dosya_no.strip() != "" and islem.strip() != "":
-            clean_dosya = dosya_no.strip()
-            turkey_tz = pytz.timezone("Europe/Istanbul")
-            simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
-
-            mevcut = any(str(d.get("Dosya No")) == clean_dosya for d in kayitlar)
-            
-            if mevcut:
-                st.warning(f"'{clean_dosya}' numaralı dosya zaten mevcut. Sol menüden dosya kartını açarak yeni işlem ekleyebilirsiniz.")
-            else:
-                yeni_dosya = {
-                    "Dosya No": clean_dosya,
-                    "OlusturmaTarihi": simdi,
-                    "Islemler": [
-                        {
-                            "Aciklama": islem,
-                            "Tarih": simdi
-                        }
-                    ]
-                }
-                kayitlar.append(yeni_dosya)
-                verileri_kaydet(kayitlar, f"Yeni dosya eklendi: {clean_dosya}")
-                st.success(f"'{clean_dosya}' numaralı dosya sol menüye eklendi!")
-                st.rerun()
+    if kayitlar:
+        sirali_dosyalar = sorted(kayitlar, key=lambda x: x.get("OlusturmaTarihi", ""), reverse=True)
+        
+        if arama:
+            gosterilecek_dosyalar = [d for d in sirali_dosyalar if arama.lower() in str(d.get("Dosya No", "")).lower()]
         else:
-            st.warning("Lütfen Dosya No ve İşlem alanlarını doldurun.")
+            gosterilecek_dosyalar = sirali_dosyalar
+
+        if gosterilecek_dosyalar:
+            for d_idx, dosya in enumerate(gosterilecek_dosyalar):
+                d_no = dosya.get("Dosya No")
+                islemler = dosya.get("Islemler", [])
+                
+                # Kurumsal Kart Görünümü (Genel Bilgiler Header)
+                with st.expander(f"📂 DOSYA NO: **{d_no}** | (Toplam {len(islemler)} İşlem Adımı)", expanded=False):
+                    
+                    # Dosya içine doğrudan yeni işlem ekleme alanı
+                    with st.form(key=f"add_islem_form_main_{d_no}_{d_idx}", clear_on_submit=True):
+                        st.markdown(f"**➕ `{d_no}` Nolu Dosyaya Yeni İşlem Ekle**")
+                        c1, c2 = st.columns([5, 1])
+                        with c1:
+                            yeni_islem_text = st.text_input("İşlem Açıklaması", key=f"inp_{d_no}_{d_idx}", label_visibility="collapsed", placeholder="Yapılan işlemi yazınız...")
+                        with c2:
+                            submit_islem = st.form_submit_button("Kaydet", use_container_width=True)
+                        
+                        if submit_islem:
+                            if yeni_islem_text.strip() != "":
+                                turkey_tz = pytz.timezone("Europe/Istanbul")
+                                simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
+                                
+                                islemler.append({
+                                    "Aciklama": yeni_islem_text.strip(),
+                                    "Tarih": simdi
+                                })
+                                
+                                verileri_kaydet(kayitlar, f"{d_no} dosyasına yeni işlem eklendi")
+                                st.success("İşlem başarıyla eklendi!")
+                                st.rerun()
+                            else:
+                                st.warning("İşlem açıklaması boş olamaz.")
+
+                    st.markdown("---")
+                    st.markdown("##### 🕒 Geçmiş İşlem Zaman Çizelgesi")
+                    
+                    # Geçmiş İşlemler
+                    for i_idx, item in enumerate(islemler):
+                        c_info, c_del = st.columns([9, 1])
+                        
+                        with c_info:
+                            st.markdown(f"**{i_idx + 1}. Adım:** {item.get('Aciklama')}")
+                            st.caption(f"🗓️ *Tarih / Saat:* {item.get('Tarih')}")
+                        
+                        with c_del:
+                            if st.button("🗑️ Sil", key=f"del_main_{d_no}_{i_idx}", help="Bu işlemi sil"):
+                                islemler.pop(i_idx)
+                                
+                                if len(islemler) == 0:
+                                    kayitlar.remove(dosya)
+                                    
+                                verileri_kaydet(kayitlar, f"{d_no} dosyasından işlem silindi")
+                                st.success("Silindi!")
+                                st.rerun()
+                        
+                        if i_idx < len(islemler) - 1:
+                            st.divider()
+                st.write("") # Küçük boşluk
+        else:
+            st.info("Arama kriterinize uygun dosya bulunamadı.")
+    else:
+        st.info("Sistemde henüz kayıtlı dosya bulunmuyor. Sağ taraftaki panelden yeni dosya oluşturabilirsiniz.")
+
+# ==============================================================================
+# SAĞ TARAF: YENİ DOSYA OLUŞTURMA VE BİLGİ PANELİ
+# ==============================================================================
+with col_right:
+    st.subheader("📌 Yeni Dosya Tanımla")
+    
+    with st.form("yeni_dosya_formu_sag", clear_on_submit=True):
+        dosya_no = st.text_input("Dosya No", placeholder="Örn: 2026-101")
+        islem = st.text_area("İlk İşlem Açıklaması", placeholder="Dosya için başlatılan ilk işlemi girin...")
+        submit_yeni = st.form_submit_button("📂 Yeni Dosya Oluştur", use_container_width=True)
+
+        if submit_yeni:
+            if dosya_no.strip() != "" and islem.strip() != "":
+                clean_dosya = dosya_no.strip()
+                turkey_tz = pytz.timezone("Europe/Istanbul")
+                simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
+
+                mevcut = any(str(d.get("Dosya No")) == clean_dosya for d in kayitlar)
+                
+                if mevcut:
+                    st.warning(f"⚠️ '{clean_dosya}' nolu dosya zaten var. Sol taraftaki arama çubuğunu kullanarak dosyayı bulabilir ve yeni işlem ekleyebilirsiniz.")
+                else:
+                    yeni_dosya = {
+                        "Dosya No": clean_dosya,
+                        "OlusturmaTarihi": simdi,
+                        "Islemler": [
+                            {
+                                "Aciklama": islem.strip(),
+                                "Tarih": simdi
+                            }
+                        ]
+                    }
+                    kayitlar.append(yeni_dosya)
+                    verileri_kaydet(kayitlar, f"Yeni dosya eklendi: {clean_dosya}")
+                    st.success(f"'{clean_dosya}' nolu dosya başarıyla oluşturuldu!")
+                    st.rerun()
+            else:
+                st.warning("Lütfen hem Dosya No hem de ilk işlem alanını doldurun.")
+
+    st.divider()
+    st.markdown("##### 💡 Kullanım İpuçları")
+    st.caption("• Mükerrer kayıt engellemek için sistem dosya numaralarını otomatik kontrol eder.")
+    st.caption("• Dosya üzerindeki herhangi bir işlem adımını sildiğinizde değişiklik anında GitHub veritabanına yansır.")
