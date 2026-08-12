@@ -296,7 +296,7 @@
     "OlusturmaTarihi": "2026-08-12 12:03:48",
     "Islemler": [],
     "BagliDosya": false,
-    "KapatmaRed": false,
+    "KapatmaRed": true,
     "TescildeBekleyen": false,
     "KapatmaAsamasinda": false,
     "YaziCevabiBekleyen": false,
