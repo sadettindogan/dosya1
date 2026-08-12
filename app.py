@@ -13,6 +13,24 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Sıkılaştırılmış ve dikey boşlukları azaltan CSS
+st.markdown("""
+<style>
+    /* Expander ve form elemanları arasındaki gereksiz iç boşlukları daraltma */
+    div[data-testid="stExpander"] div[role="region"] {
+        padding-top: 0.2rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+    .element-container {
+        margin-bottom: -0.2rem !important;
+    }
+    hr {
+        margin-top: 0.4rem !important;
+        margin-bottom: 0.4rem !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("📁 Dosya Takibi")
 st.markdown("---")
 
@@ -61,7 +79,7 @@ def verileri_kaydet(yeni_kayitlar, mesaj):
 
 kayitlar = verileri_getir()
 
-# TOPLAM DOSYA SAYISI GÖSTERGESİ (En Üst Bölüm)
+# TOPLAM DOSYA SAYISI GÖSTERGESİ
 toplam_dosya_sayisi = len(kayitlar)
 col_m1, _ = st.columns([1, 3])
 with col_m1:
@@ -118,8 +136,8 @@ with col_left:
                         st.rerun()
 
                 with exp_container:
-                    # --- DÜZENLENEBİLİR DOSYA AÇIKLAMASI ALANI ---
-                    st.markdown("##### 📝 Dosya Açıklaması")
+                    # --- SIKIŞTIRILMIŞ DOSYA AÇIKLAMASI ALANI ---
+                    st.markdown("**📝 Dosya Açıklaması**")
                     
                     if not st.session_state[edit_key]:
                         c_aciklama, c_edit_btn = st.columns([5, 1], vertical_alignment="center")
@@ -134,7 +152,7 @@ with col_left:
                                 st.rerun()
                     else:
                         with st.form(key=f"form_edit_aciklama_{d_no}_{d_idx}"):
-                            yeni_aciklama_val = st.text_area("Açıklamayı Güncelle", value=ana_aciklama, height=90)
+                            yeni_aciklama_val = st.text_area("Açıklamayı Güncelle", value=ana_aciklama, height=70)
                             col_save, col_cancel = st.columns([1, 1])
                             
                             with col_save:
@@ -153,9 +171,8 @@ with col_left:
                                 st.session_state[edit_key] = False
                                 st.rerun()
 
-                    st.markdown("---")
+                    # Sıkılaştırılmış Yeni İşlem Ekleme Bölümü
                     st.markdown(f"**➕ `{d_no}` Nolu Dosyaya Yeni İşlem Ekle**")
-                    
                     with st.form(key=f"add_islem_form_main_{d_no}_{d_idx}", clear_on_submit=True):
                         col_inp, col_btn = st.columns([3, 1], vertical_alignment="center")
                         
@@ -181,9 +198,8 @@ with col_left:
                             else:
                                 st.warning("İşlem açıklaması boş olamaz.")
 
-                    st.markdown("---")
-                    st.markdown("##### 🕒 Dosyada bugüne kadar yapılan işlemler")
-                    
+                    # Sıkılaştırılmış Geçmiş İşlemler Bölümü
+                    st.markdown("**🕒 Dosyada bugüne kadar yapılan işlemler**")
                     if islemler:
                         for i_idx, item in enumerate(islemler):
                             c_text, c_date, c_del = st.columns([5, 3, 1], vertical_alignment="center")
