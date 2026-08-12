@@ -22,27 +22,30 @@ def verileri_getir():
     try:
         file_content = repo.get_contents(FILE_PATH)
         data = json.loads(file_content.decoded_content.decode('utf-8'))
-        return data, file_content.sha
+        return data
     except Exception:
-        return [], None
+        return []
 
-def verileri_kaydet(yeni_kayitlar, sha, mesaj):
+def verileri_kaydet(yeni_kayitlar, mesaj):
     yeni_json_icerik = json.dumps(yeni_kayitlar, ensure_ascii=False, indent=2)
-    if sha:
+    try:
+        # Anlık olarak güncel dosya SHA değerini alıyoruz
+        file_content = repo.get_contents(FILE_PATH)
         repo.update_file(
             path=FILE_PATH,
             message=mesaj,
             content=yeni_json_icerik,
-            sha=sha
+            sha=file_content.sha
         )
-    else:
+    except Exception:
+        # Dosya henüz hiç yoksa yeni oluşturur
         repo.create_file(
             path=FILE_PATH,
             message=mesaj,
             content=yeni_json_icerik
         )
 
-kayitlar, file_sha = verileri_getir()
+kayitlar = verileri_getir()
 
 # Session State kontrolleri (Düzenleme modu için)
 if "editing_target" not in st.session_state:
@@ -89,7 +92,7 @@ with st.form("kayit_formu", clear_on_submit=True):
                         dosya["Islemler"][t_idx]["Tarih"] = f"{simdi} (Düzenlendi)"
                         break
                 
-                verileri_kaydet(kayitlar, file_sha, f"İşlem güncellendi: {clean_dosya}")
+                verileri_kaydet(kayitlar, f"İşlem güncellendi: {clean_dosya}")
                 st.session_state.editing_target = None
                 st.success("İşlem adımı başarıyla güncellendi!")
             else:
@@ -108,7 +111,7 @@ with st.form("kayit_formu", clear_on_submit=True):
                         "Aciklama": islem,
                         "Tarih": simdi
                     })
-                    verileri_kaydet(kayitlar, file_sha, f"{clean_dosya} dosyasına {islem_no}. işlem eklendi")
+                    verileri_kaydet(kayitlar, f"{clean_dosya} dosyasına {islem_no}. işlem eklendi")
                     st.success(f"'{clean_dosya}' numaralı dosyaya {islem_no}. işlem adımı eklendi!")
                 else:
                     # Yeni dosya kaydı ve ilk işlem
@@ -124,7 +127,7 @@ with st.form("kayit_formu", clear_on_submit=True):
                         ]
                     }
                     kayitlar.append(yeni_dosya_kaydi)
-                    verileri_kaydet(kayitlar, file_sha, f"Yeni dosya eklendi: {clean_dosya}")
+                    verileri_kaydet(kayitlar, f"Yeni dosya eklendi: {clean_dosya}")
                     st.success(f"'{clean_dosya}' numaralı dosya ve 1. işlemi oluşturuldu!")
             
             st.rerun()
@@ -180,7 +183,7 @@ if kayitlar:
                                 for n, item in enumerate(islemler):
                                     item["Adim"] = n + 1
                                     
-                            verileri_kaydet(kayitlar, file_sha, f"{d_no} dosyasından işlem silindi")
+                            verileri_kaydet(kayitlar, f"{d_no} dosyasından işlem silindi")
                             st.session_state.editing_target = None
                             st.success("İşlem silindi!")
                             st.rerun()
