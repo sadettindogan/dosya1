@@ -26,13 +26,23 @@ def verileri_getir():
     except Exception:
         return [], None
 
-kayitlar, file_sha = verileri_getir()
+def verileri_kaydet(yeni_kayitlar, sha, mesaj):
+    yeni_json_icerik = json.dumps(yeni_kayitlar, ensure_ascii=False, indent=2)
+    if sha:
+        repo.update_file(
+            path=FILE_PATH,
+            message=mesaj,
+            content=yeni_json_icerik,
+            sha=sha
+        )
+    else:
+        repo.create_file(
+            path=FILE_PATH,
+            message=mesaj,
+            content=yeni_json_icerik
+        )
 
-# DataFrame Oluşturma
-if kayitlar:
-    df = pd.DataFrame(kayitlar)
-else:
-    df = pd.DataFrame(columns=["Tarih", "Dosya No", "Yapılan İşlem"])
+kayitlar, file_sha = verileri_getir()
 
 # --- KAYIT FORMU ---
 st.subheader("Yeni İşlem Ekle")
@@ -44,7 +54,6 @@ with st.form("kayit_formu", clear_on_submit=True):
 
     if submit:
         if dosya_no.strip() != "" and islem.strip() != "":
-            # Türkiye Saat Dilimine (UTC+3) Göre Otomatik Tarih ve Saat Alımı
             turkey_tz = pytz.timezone("Europe/Istanbul")
             simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
             
@@ -55,39 +64,48 @@ with st.form("kayit_formu", clear_on_submit=True):
             }
             
             kayitlar.append(yeni_kayit)
-            yeni_json_icerik = json.dumps(kayitlar, ensure_ascii=False, indent=2)
-            
-            # GitHub Üzerindeki Dosyayı Güncelleme (Commit)
-            if file_sha:
-                repo.update_file(
-                    path=FILE_PATH,
-                    message=f"Yeni kayıt eklendi: {dosya_no}",
-                    content=yeni_json_icerik,
-                    sha=file_sha
-                )
-            else:
-                repo.create_file(
-                    path=FILE_PATH,
-                    message=f"Veri dosyası oluşturuldu ve kayıt eklendi: {dosya_no}",
-                    content=yeni_json_icerik
-                )
+            verileri_kaydet(kayitlar, file_sha, f"Yeni kayıt eklendi: {dosya_no}")
             
             st.success(f"'{dosya_no}' numaralı dosya işlemi başarıyla kaydedildi!")
             st.rerun()
         else:
             st.warning("Lütfen tüm alanları doldurun.")
 
-# --- İZLEME VE GEÇMİŞ EKRANI ---
+# --- İZLEME VE SILME EKRANI ---
 st.divider()
 st.subheader("📋 Geçmiş Kayıtlar")
 
 arama = st.text_input("Dosya No ile Arama Yap", "")
 
-if not df.empty:
+if kayitlar:
+    # Kayıtları tarihe göre ters sıralama (En yeni en üstte)
+    sirali_kayitlar = sorted(kayitlar, key=lambda x: x.get("Tarih", ""), reverse=True)
+    
+    # Arama filtresi
     if arama:
-        filtreli_df = df[df["Dosya No"].astype(str).str.contains(arama, case=False, na=False)]
-        st.dataframe(filtreli_df, use_container_width=True)
+        gosterilecek_kayitlar = [k for k in sirali_kayitlar if arama.lower() in str(k.get("Dosya No", "")).lower()]
     else:
-        st.dataframe(df.sort_values(by="Tarih", ascending=False), use_container_width=True)
+        gosterilecek_kayitlar = sirali_kayitlar
+
+    if gosterilecek_kayitlar:
+        for idx, kayit in enumerate(gosterilecek_kayitlar):
+            with st.container():
+                col1, col2 = st.columns([5, 1])
+                
+                with col1:
+                    st.markdown(f"**Dosya No:** `{kayit.get('Dosya No')}` | **Tarih:** {kayit.get('Tarih')}")
+                    st.write(f"**İşlem:** {kayit.get('Yapılan İşlem')}")
+                
+                with col2:
+                    # Her kayıt için benzersiz buton anahtarı
+                    if st.button("🗑️ Sil", key=f"delete_{kayit.get('Tarih')}_{idx}"):
+                        # Orijinal listeden ilgili kaydı sil
+                        kayitlar.remove(kayit)
+                        verileri_kaydet(kayitlar, file_sha, f"Kayıt silindi: {kayit.get('Dosya No')}")
+                        st.success("Kayıt silindi!")
+                        st.rerun()
+                st.divider()
+    else:
+        st.info("Aramanıza uygun kayıt bulunamadı.")
 else:
     st.info("Henüz kayıt bulunmuyor.")
