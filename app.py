@@ -81,7 +81,10 @@ col_left, col_right = st.columns([68, 32], gap="large")
 with col_left:
     st.subheader("📋 Kayıtlı Dosyalar ve İşlem Akışı")
     
-    arama = st.text_input("🔍 Dosya No ile Filtrele / Ara", "", placeholder="Örn: 1001")
+    # Arama çubuğunu 1/3 oranına çekiyoruz
+    search_col, _ = st.columns([1, 2])
+    with search_col:
+        arama = st.text_input("🔍 Dosya No ile Filtrele / Ara", "", placeholder="Örn: 1001")
 
     if kayitlar:
         sirali_dosyalar = sorted(kayitlar, key=lambda x: x.get("OlusturmaTarihi", ""), reverse=True)
@@ -96,33 +99,32 @@ with col_left:
                 d_no = dosya.get("Dosya No")
                 islemler = dosya.get("Islemler", [])
                 
-                # Kurumsal Kart Görünümü (Genel Bilgiler Header)
                 with st.expander(f"📂 DOSYA NO: **{d_no}** | (Toplam {len(islemler)} İşlem Adımı)", expanded=False):
                     
-                    # Dosya içine doğrudan yeni işlem ekleme alanı
-                    with st.form(key=f"add_islem_form_main_{d_no}_{d_idx}", clear_on_submit=True):
-                        st.markdown(f"**➕ `{d_no}` Nolu Dosyaya Yeni İşlem Ekle**")
-                        c1, c2 = st.columns([5, 1])
-                        with c1:
-                            yeni_islem_text = st.text_input("İşlem Açıklaması", key=f"inp_{d_no}_{d_idx}", label_visibility="collapsed", placeholder="Yapılan işlemi yazınız...")
-                        with c2:
-                            submit_islem = st.form_submit_button("Kaydet", use_container_width=True)
-                        
-                        if submit_islem:
-                            if yeni_islem_text.strip() != "":
-                                turkey_tz = pytz.timezone("Europe/Istanbul")
-                                simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
-                                
-                                islemler.append({
-                                    "Aciklama": yeni_islem_text.strip(),
-                                    "Tarih": simdi
-                                })
-                                
-                                verileri_kaydet(kayitlar, f"{d_no} dosyasına yeni işlem eklendi")
-                                st.success("İşlem başarıyla eklendi!")
-                                st.rerun()
-                            else:
-                                st.warning("İşlem açıklaması boş olamaz.")
+                    # Dosya içi işlem ekleme formunu 1/3 genişliğine daraltma
+                    st.markdown(f"**➕ `{d_no}` Nolu Dosyaya Yeni İşlem Ekle**")
+                    input_col, _ = st.columns([1, 2])
+                    
+                    with input_col:
+                        with st.form(key=f"add_islem_form_main_{d_no}_{d_idx}", clear_on_submit=True):
+                            yeni_islem_text = st.text_input("İşlem Açıklaması", key=f"inp_{d_no}_{d_idx}", placeholder="Yapılan işlemi yazınız...")
+                            submit_islem = st.form_submit_button("➕ İşlem Ekle", use_container_width=True)
+                            
+                            if submit_islem:
+                                if yeni_islem_text.strip() != "":
+                                    turkey_tz = pytz.timezone("Europe/Istanbul")
+                                    simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
+                                    
+                                    islemler.append({
+                                        "Aciklama": yeni_islem_text.strip(),
+                                        "Tarih": simdi
+                                    })
+                                    
+                                    verileri_kaydet(kayitlar, f"{d_no} dosyasına yeni işlem eklendi")
+                                    st.success("İşlem başarıyla eklendi!")
+                                    st.rerun()
+                                else:
+                                    st.warning("Açıklama boş olamaz.")
 
                     st.markdown("---")
                     st.markdown("##### 🕒 Geçmiş İşlem Zaman Çizelgesi")
@@ -155,14 +157,15 @@ with col_left:
         st.info("Sistemde henüz kayıtlı dosya bulunmuyor. Sağ taraftaki panelden yeni dosya oluşturabilirsiniz.")
 
 # ==============================================================================
-# SAĞ TARAF: YENİ DOSYA OLUŞTURMA VE BİLGİ PANELİ
+# SAĞ TARAF: YENİ DOSYA OLUŞTURMA PANELİ
 # ==============================================================================
 with col_right:
     st.subheader("📌 Yeni Dosya Tanımla")
     
+    # Form kutularını sağ taraf içinde de daha kompak yapmak için 1/3 mantığına uyduruyoruz
     with st.form("yeni_dosya_formu_sag", clear_on_submit=True):
         dosya_no = st.text_input("Dosya No", placeholder="Örn: 2026-101")
-        islem = st.text_area("İlk İşlem Açıklaması", placeholder="Dosya için başlatılan ilk işlemi girin...")
+        islem = st.text_area("İlk İşlem Açıklaması", placeholder="Dosya için başlatılan ilk işlemi girin...", height=100)
         submit_yeni = st.form_submit_button("📂 Yeni Dosya Oluştur", use_container_width=True)
 
         if submit_yeni:
