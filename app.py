@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, date
 import json
 import pytz
 from github import Github
@@ -66,6 +66,10 @@ def verileri_getir():
                     item["YaziCevabiBekleyen"] = False
                 if "Incelenmedi" not in item:
                     item["Incelenmedi"] = False
+                if "MailAtildi" not in item:
+                    item["MailAtildi"] = False
+                if "MailTarihi" not in item:
+                    item["MailTarihi"] = ""
                 yeni_format_data.append(item)
             return yeni_format_data
         return []
@@ -91,7 +95,7 @@ def verileri_kaydet(yeni_kayitlar, mesaj):
 
 kayitlar = verileri_getir()
 
-# TOPLAM VE DURUM SAYILARI GÖSTERGELERİ (7 SÜTUNLU PANORAMA)
+# TOPLAM VE DURUM SAYILARI GÖSTERGELERİ (8 SÜTUNLU PANORAMA)
 toplam_dosya_sayisi = len(kayitlar)
 bagli_dosya_sayisi = sum(1 for d in kayitlar if d.get("BagliDosya", False))
 kapatma_red_sayisi = sum(1 for d in kayitlar if d.get("KapatmaRed", False))
@@ -99,22 +103,25 @@ tescilde_bekleyen_sayisi = sum(1 for d in kayitlar if d.get("TescildeBekleyen", 
 kapatma_asamasinda_sayisi = sum(1 for d in kayitlar if d.get("KapatmaAsamasinda", False))
 yazi_cevabi_bekleyen_sayisi = sum(1 for d in kayitlar if d.get("YaziCevabiBekleyen", False))
 incelenmedi_sayisi = sum(1 for d in kayitlar if d.get("Incelenmedi", False))
+mail_atildi_sayisi = sum(1 for d in kayitlar if d.get("MailAtildi", False))
 
-col_m1, col_m2, col_m3, col_m4, col_m5, col_m6, col_m7 = st.columns(7)
+col_m1, col_m2, col_m3, col_m4, col_m5, col_m6, col_m7, col_m8 = st.columns(8)
 with col_m1:
-    st.metric(label="📊 Toplam Dosya", value=f"{toplam_dosya_sayisi}")
+    st.metric(label="📊 Toplam", value=f"{toplam_dosya_sayisi}")
 with col_m2:
-    st.metric(label="🔗 Bağlı Dosya", value=f"{bagli_dosya_sayisi}")
+    st.metric(label="🔗 Bağlı", value=f"{bagli_dosya_sayisi}")
 with col_m3:
     st.metric(label="🚫 Kapatma Red", value=f"{kapatma_red_sayisi}")
 with col_m4:
-    st.metric(label="⏳ Tescilde Bekleyen", value=f"{tescilde_bekleyen_sayisi}")
+    st.metric(label="⏳ Tescilde", value=f"{tescilde_bekleyen_sayisi}")
 with col_m5:
-    st.metric(label="🏁 Kapatma Aşamasında", value=f"{kapatma_asamasinda_sayisi}")
+    st.metric(label="🏁 Kapatmada", value=f"{kapatma_asamasinda_sayisi}")
 with col_m6:
-    st.metric(label="✉️ Yazı Cevabı Bekleyen", value=f"{yazi_cevabi_bekleyen_sayisi}")
+    st.metric(label="✉️ Yazı Cevabı", value=f"{yazi_cevabi_bekleyen_sayisi}")
 with col_m7:
     st.metric(label="🔍 İncelenmedi", value=f"{incelenmedi_sayisi}")
+with col_m8:
+    st.metric(label="📧 Mail Atıldı", value=f"{mail_atildi_sayisi}")
 
 st.markdown("---")
 
@@ -154,15 +161,14 @@ with col_left:
                 kapatma_asamasinda_durumu = dosya.get("KapatmaAsamasinda", False)
                 yazi_cevabi_durumu = dosya.get("YaziCevabiBekleyen", False)
                 incelenmedi_durumu = dosya.get("Incelenmedi", False)
+                mail_atildi_durumu = dosya.get("MailAtildi", False)
+                mail_tarihi_val = dosya.get("MailTarihi", "")
                 
                 edit_key = f"edit_aciklama_{d_no}_{d_idx}"
                 if edit_key not in st.session_state:
                     st.session_state[edit_key] = False
 
-                # SAĞ TARAFA DOSYAYI SİL BUTONU EKLEME DÜZENİ
-                col_exp, col_dosya_sil = st.columns([8, 2], vertical_alignment="center")
-                
-                # Kart başlığına simgeler ekleme
+                # Kart başlığı simgeleri
                 bagli_icon = "🔗 " if bagli_durumu else ""
                 red_icon = "🚫 " if kapatma_red_durumu else ""
                 tescild_icon = "⏳ " if tescilde_durumu else ""
@@ -170,8 +176,21 @@ with col_left:
                 yazi_icon = "✉️ " if yazi_cevabi_durumu else ""
                 incel_icon = "🔍 " if incelenmedi_durumu else ""
                 
+                # Mail atıldı başlık eki
+                mail_baslik_eki = ""
+                if mail_atildi_durumu:
+                    if mail_tarihi_val:
+                        mail_baslik_eki = f" 📧 ({mail_tarihi_val} mail atıldı)"
+                    else:
+                        mail_baslik_eki = " 📧 (mail atıldı)"
+
+                col_exp, col_dosya_sil = st.columns([8, 2], vertical_alignment="center")
+                
                 with col_exp:
-                    exp_container = st.expander(f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} {bagli_icon}{red_icon}{tescild_icon}{kapatma_icon}{yazi_icon}{incel_icon}({len(islemler)} İşlem Adımı)", expanded=False)
+                    exp_container = st.expander(
+                        f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} {bagli_icon}{red_icon}{tescild_icon}{kapatma_icon}{yazi_icon}{incel_icon}({len(islemler)} İşlem){mail_baslik_eki}", 
+                        expanded=False
+                    )
                 
                 with col_dosya_sil:
                     if st.button("🗑️ Dosyayı Sil", key=f"del_dosya_btn_{d_no}_{d_idx}", use_container_width=True, help="Bu dosyayı tüm bilgileriyle sil"):
@@ -181,8 +200,8 @@ with col_left:
                         st.rerun()
 
                 with exp_container:
-                    # --- DOSYA AÇIKLAMASI VE DURUM KUTUCUKLARI (6 KUTU) ---
-                    col_b1, col_b2, col_b3, col_b4, col_b5, col_b6 = st.columns(6)
+                    # --- DOSYA AÇIKLAMASI VE DURUM KUTUCUKLARI (7 KUTU) ---
+                    col_b1, col_b2, col_b3, col_b4, col_b5, col_b6, col_b7 = st.columns(7)
                     
                     with col_b1:
                         yeni_bagli = st.checkbox("🔗 Bağlı", value=bagli_durumu, key=f"chk_bagli_{d_no}_{d_idx}")
@@ -199,21 +218,21 @@ with col_left:
                             st.rerun()
 
                     with col_b3:
-                        yeni_tescild = st.checkbox("⏳ Tescilde Bekleyen", value=tescilde_durumu, key=f"chk_tescild_{d_no}_{d_idx}")
+                        yeni_tescild = st.checkbox("⏳ Tescilde", value=tescilde_durumu, key=f"chk_tescild_{d_no}_{d_idx}")
                         if yeni_tescild != tescilde_durumu:
                             dosya["TescildeBekleyen"] = yeni_tescild
                             verileri_kaydet(kayitlar, f"{d_no} tescilde bekleyen durumu güncellendi")
                             st.rerun()
 
                     with col_b4:
-                        yeni_kapatma = st.checkbox("🏁 Kapatma Aşamasında", value=kapatma_asamasinda_durumu, key=f"chk_kapatma_{d_no}_{d_idx}")
+                        yeni_kapatma = st.checkbox("🏁 Kapatmada", value=kapatma_asamasinda_durumu, key=f"chk_kapatma_{d_no}_{d_idx}")
                         if yeni_kapatma != kapatma_asamasinda_durumu:
                             dosya["KapatmaAsamasinda"] = yeni_kapatma
                             verileri_kaydet(kayitlar, f"{d_no} kapatma aşamasında durumu güncellendi")
                             st.rerun()
 
                     with col_b5:
-                        yeni_yazi = st.checkbox("✉️ Yazı Cevabı Bekleyen", value=yazi_cevabi_durumu, key=f"chk_yazi_{d_no}_{d_idx}")
+                        yeni_yazi = st.checkbox("✉️ Yazı Cevabı", value=yazi_cevabi_durumu, key=f"chk_yazi_{d_no}_{d_idx}")
                         if yeni_yazi != yazi_cevabi_durumu:
                             dosya["YaziCevabiBekleyen"] = yeni_yazi
                             verileri_kaydet(kayitlar, f"{d_no} yazı cevabı bekleyen durumu güncellendi")
@@ -225,6 +244,33 @@ with col_left:
                             dosya["Incelenmedi"] = yeni_incel
                             verileri_kaydet(kayitlar, f"{d_no} incelenmedi durumu güncellendi")
                             st.rerun()
+
+                    with col_b7:
+                        yeni_mail = st.checkbox("📧 Mail Atıldı", value=mail_atildi_durumu, key=f"chk_mail_{d_no}_{d_idx}")
+                        if yeni_mail != mail_atildi_durumu:
+                            dosya["MailAtildi"] = yeni_mail
+                            if yeni_mail and not mail_tarihi_val:
+                                dosya["MailTarihi"] = datetime.now().strftime("%d.%m.%Y")
+                            verileri_kaydet(kayitlar, f"{d_no} mail atıldı durumu güncellendi")
+                            st.rerun()
+
+                    # Mail Atıldı İşaretliyse Tarih Girme / Değiştirme Alanı
+                    if mail_atildi_durumu:
+                        c_m_lbl, c_m_input = st.columns([2, 3], vertical_alignment="center")
+                        with c_m_lbl:
+                            st.caption("📅 **Mail Gönderim Tarihi:**")
+                        with c_m_input:
+                            girilen_tarih = st.text_input(
+                                "Mail Tarihi", 
+                                value=mail_tarihi_val if mail_tarihi_val else datetime.now().strftime("%d.%m.%Y"), 
+                                key=f"inp_mail_date_{d_no}_{d_idx}",
+                                label_visibility="collapsed",
+                                placeholder="GG.AA.YYYY"
+                            )
+                            if girilen_tarih != mail_tarihi_val:
+                                dosya["MailTarihi"] = girilen_tarih.strip()
+                                verileri_kaydet(kayitlar, f"{d_no} mail tarihi güncellendi")
+                                st.rerun()
 
                     st.markdown("**📝 Dosya Açıklaması**")
 
@@ -333,10 +379,13 @@ with col_right:
                 bagli_durumu_input = st.checkbox("🔗 Bağlı Dosya")
                 tescilde_durumu_input = st.checkbox("⏳ Tescilde Bekleyen")
                 yazi_cevabi_input = st.checkbox("✉️ Yazı Cevabı Bekleyen")
+                incelenmedi_input = st.checkbox("🔍 İncelenmedi")
             with c_in2:
                 kapatma_red_input = st.checkbox("❌ Kapatma Red")
                 kapatma_asamasinda_input = st.checkbox("🏁 Kapatma Aşamasında")
-                incelenmedi_input = st.checkbox("🔍 İncelenmedi")
+                mail_atildi_input = st.checkbox("📧 Firmaya Mail Atıldı")
+                
+            mail_tarihi_input = st.text_input("Mail Tarihi (Opsiyonel)", value=datetime.now().strftime("%d.%m.%Y"), placeholder="GG.AA.YYYY")
 
             submit_yeni = st.form_submit_button("📂 Dosya Oluştur / Güncelle", use_container_width=True)
 
@@ -361,6 +410,8 @@ with col_right:
                         mevcut["KapatmaAsamasinda"] = kapatma_asamasinda_input
                         mevcut["YaziCevabiBekleyen"] = yazi_cevabi_input
                         mevcut["Incelenmedi"] = incelenmedi_input
+                        mevcut["MailAtildi"] = mail_atildi_input
+                        mevcut["MailTarihi"] = mail_tarihi_input.strip() if mail_atildi_input else ""
                         verileri_kaydet(kayitlar, f"{clean_dosya} dosyasının bilgileri güncellendi")
                         st.success(f"'{clean_dosya}' dosya bilgileri güncellendi!")
                     else:
@@ -374,6 +425,8 @@ with col_right:
                             "KapatmaAsamasinda": kapatma_asamasinda_input,
                             "YaziCevabiBekleyen": yazi_cevabi_input,
                             "Incelenmedi": incelenmedi_input,
+                            "MailAtildi": mail_atildi_input,
+                            "MailTarihi": mail_tarihi_input.strip() if mail_atildi_input else "",
                             "OlusturmaTarihi": simdi,
                             "Islemler": []
                         }
@@ -390,7 +443,7 @@ with col_right:
         st.caption("`DIIBNO1` | `DIIBNO2` | `DIIBNO3` | `Firma Unvanı` | `Açıklama`")
         
         with st.form("excel_paste_form", clear_on_submit=True):
-            pasted_data = st.text_area("Excel Verisini Yapıştırın", placeholder="2025\tD1\t5400\tISIK CELIK SAN.VE TIC.A.S.\tIncelenmedi.", height=120)
+            pasted_data = st.text_area("Excel Verisini Yapıştırın", placeholder="2025\tD1\t5400\tISIK CELIK SAN.VE TIC.A.S.\tİnceleme yapılıyor.", height=120)
             submit_excel = st.form_submit_button("⚡ Toplu Verileri Kaydet", use_container_width=True)
             
             if submit_excel:
@@ -429,6 +482,8 @@ with col_right:
                                         "KapatmaAsamasinda": False,
                                         "YaziCevabiBekleyen": False,
                                         "Incelenmedi": False,
+                                        "MailAtildi": False,
+                                        "MailTarihi": "",
                                         "OlusturmaTarihi": simdi,
                                         "Islemler": []
                                     })
