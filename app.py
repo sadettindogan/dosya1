@@ -277,36 +277,45 @@ with col_right:
     with tab_rapor:
         st.caption("Excel tablonuzla birebir aynı formatta (5 Sütunlu) rapor oluşturur.")
         
-        if st.button("📊 Rapor Oluştur", use_container_width=True):
-            if kayitlar:
-                # Excel Başlık Satırı (A, B, C, D, E Sütunları)
-                rapor_metni = "DIIBNO1\tDIIBNO2\tDIIBNO3\tFirma Unvanı\tAçıklama\n"
-                
-                for dosya in kayitlar:
-                    d_no = dosya.get("Dosya No", "")
-                    firma = dosya.get("Firma", "")
-                    islemler = dosya.get("Islemler", [])
+        col_rapor, col_temizle = st.columns(2)
+        
+        with col_rapor:
+            if st.button("📊 Rapor Oluştur", use_container_width=True):
+                if kayitlar:
+                    # Excel Başlık Satırı (A, B, C, D, E Sütunları)
+                    rapor_metni = "DIIBNO1\tDIIBNO2\tDIIBNO3\tFirma Unvanı\tAçıklama\n"
                     
-                    # Dosya numarasını boşluklara göre 3 parçaya böl
-                    parcalar = d_no.split(" ")
-                    d1 = parcalar[0] if len(parcalar) > 0 else ""
-                    d2 = parcalar[1] if len(parcalar) > 1 else ""
-                    d3 = " ".join(parcalar[2:]) if len(parcalar) > 2 else ""
+                    for dosya in kayitlar:
+                        d_no = dosya.get("Dosya No", "")
+                        firma = dosya.get("Firma", "")
+                        islemler = dosya.get("Islemler", [])
+                        
+                        # Dosya numarasını boşluklara göre 3 parçaya böl
+                        parcalar = d_no.split(" ")
+                        d1 = parcalar[0] if len(parcalar) > 0 else ""
+                        d2 = parcalar[1] if len(parcalar) > 1 else ""
+                        d3 = " ".join(parcalar[2:]) if len(parcalar) > 2 else ""
+                        
+                        # Açıklamaları hazırlama
+                        if len(islemler) == 0:
+                            aciklama_metni = ""
+                        elif len(islemler) == 1:
+                            aciklama_metni = islemler[0].get("Aciklama", "")
+                        else:
+                            aciklama_metni = " | ".join([item.get('Aciklama') for item in islemler if item.get('Aciklama')])
+                        
+                        # Satırı Tab ile ayırarak ekle
+                        rapor_metni += f"{d1}\t{d2}\t{d3}\t{firma}\t{aciklama_metni}\n"
                     
-                    # Açıklamaları hazırlama
-                    if len(islemler) == 0:
-                        aciklama_metni = ""
-                    elif len(islemler) == 1:
-                        aciklama_metni = islemler[0].get("Aciklama", "")
-                    else:
-                        aciklama_metni = " | ".join([item.get('Aciklama') for item in islemler if item.get('Aciklama')])
-                    
-                    # Satırı Tab ile ayırarak ekle
-                    rapor_metni += f"{d1}\t{d2}\t{d3}\t{firma}\t{aciklama_metni}\n"
-                
-                st.session_state["rapor_cikti"] = rapor_metni
-            else:
-                st.info("Raporlanacak kayıtlı dosya bulunmuyor.")
+                    st.session_state["rapor_cikti"] = rapor_metni
+                else:
+                    st.info("Raporlanacak kayıtlı dosya bulunmuyor.")
+
+        with col_temizle:
+            if st.button("🧹 Temizle", use_container_width=True):
+                if "rapor_cikti" in st.session_state:
+                    st.session_state["rapor_cikti"] = ""
+                    st.rerun()
 
         if "rapor_cikti" in st.session_state and st.session_state["rapor_cikti"]:
             st.markdown("**Excel Tablo Çıktısı:**")
