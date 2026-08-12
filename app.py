@@ -32,23 +32,11 @@ def verileri_getir():
         yeni_format_data = []
         if isinstance(data, list):
             for item in data:
-                if "Islemler" not in item and "Dosya No" in item:
-                    d_no = str(item.get("Dosya No"))
-                    tarih = item.get("Tarih", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                    islem_text = item.get("Yapılan İşlem", "Kayıt detay yok")
-                    
-                    mevcut = next((x for x in yeni_format_data if x["Dosya No"] == d_no), None)
-                    if mevcut:
-                        mevcut["Islemler"].append({"Aciklama": islem_text, "Tarih": tarih})
-                    else:
-                        yeni_format_data.append({
-                            "Dosya No": d_no,
-                            "Firma": item.get("Firma", "-"),
-                            "OlusturmaTarihi": tarih,
-                            "Islemler": [{"Aciklama": islem_text, "Tarih": tarih}]
-                        })
-                else:
-                    yeni_format_data.append(item)
+                if "Aciklama" not in item:
+                    item["Aciklama"] = ""
+                if "Islemler" not in item:
+                    item["Islemler"] = []
+                yeni_format_data.append(item)
             return yeni_format_data
         return []
     except Exception:
@@ -101,10 +89,19 @@ with col_left:
             for d_idx, dosya in enumerate(gosterilecek_dosyalar):
                 d_no = dosya.get("Dosya No")
                 firma = dosya.get("Firma", "-")
+                ana_aciklama = dosya.get("Aciklama", "")
                 islemler = dosya.get("Islemler", [])
                 
-                with st.expander(f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} ({len(islemler)} İşlem)", expanded=False):
+                with st.expander(f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} ({len(islemler)} İşlem Adımı)", expanded=False):
                     
+                    # Sabit Açıklama Alanı
+                    st.markdown("##### 📝 Dosya Açıklaması")
+                    if ana_aciklama.strip() != "":
+                        st.info(ana_aciklama)
+                    else:
+                        st.caption("*Bu dosya için henüz bir ana açıklama eklenmemiş.*")
+                    
+                    st.markdown("---")
                     st.markdown(f"**➕ `{d_no}` Nolu Dosyaya Yeni İşlem Ekle**")
                     
                     with st.form(key=f"add_islem_form_main_{d_no}_{d_idx}", clear_on_submit=True):
@@ -130,30 +127,29 @@ with col_left:
                                 st.success("İşlem başarıyla eklendi!")
                                 st.rerun()
                             else:
-                                st.warning("Açıklama boş olamaz.")
+                                st.warning("İşlem açıklaması boş olamaz.")
 
                     st.markdown("---")
                     st.markdown("##### 🕒 Dosyada bugüne kadar yapılan işlemler")
                     
-                    for i_idx, item in enumerate(islemler):
-                        c_text, c_date, c_del = st.columns([5, 3, 1], vertical_alignment="center")
-                        
-                        with c_text:
-                            st.markdown(f"**{i_idx + 1}. Adım:** {item.get('Aciklama')}")
-                        
-                        with c_date:
-                            st.caption(f"🗓️ {item.get('Tarih')}")
-                        
-                        with c_del:
-                            if st.button("🗑️ Sil", key=f"del_main_{d_no}_{i_idx}", help="Bu işlemi sil"):
-                                islemler.pop(i_idx)
-                                
-                                if len(islemler) == 0:
-                                    kayitlar.remove(dosya)
-                                    
-                                verileri_kaydet(kayitlar, f"{d_no} dosyasından işlem silindi")
-                                st.success("Silindi!")
-                                st.rerun()
+                    if islemler:
+                        for i_idx, item in enumerate(islemler):
+                            c_text, c_date, c_del = st.columns([5, 3, 1], vertical_alignment="center")
+                            
+                            with c_text:
+                                st.markdown(f"**{i_idx + 1}. Adım:** {item.get('Aciklama')}")
+                            
+                            with c_date:
+                                st.caption(f"🗓️ {item.get('Tarih')}")
+                            
+                            with c_del:
+                                if st.button("🗑️ Sil", key=f"del_main_{d_no}_{i_idx}", help="Bu işlemi sil"):
+                                    islemler.pop(i_idx)
+                                    verileri_kaydet(kayitlar, f"{d_no} dosyasından işlem silindi")
+                                    st.success("Silindi!")
+                                    st.rerun()
+                    else:
+                        st.caption("*Henüz ilave bir işlem adımı eklenmedi.*")
                 st.write("") 
         else:
             st.info("Arama kriterinize uygun dosya bulunamadı.")
@@ -161,7 +157,7 @@ with col_left:
         st.info("Sistemde henüz kayıtlı dosya bulunmuyor.")
 
 # ==============================================================================
-# SAĞ TARAF: VERİ GİRİŞİ, TOPLU İŞLEM VE RAPORLAMA PANELİ
+# SAĞ TARAF: VERİ GİRİŞİ, TOPLU İŞLEM, RAPORLAMA VE TÜMÜNÜ SİL PANELİ
 # ==============================================================================
 with col_right:
     st.subheader("📌 İşlem Paneli")
@@ -173,40 +169,33 @@ with col_right:
         with st.form("yeni_dosya_formu_sag", clear_on_submit=True):
             dosya_no = st.text_input("Dosya No / Adı (Örn: 2025 D1 5400)", placeholder="Örn: 2025 D1 5400")
             firma = st.text_input("Firma Unvanı", placeholder="Örn: ISIK CELIK SAN.VE TIC.A.S.")
-            islem = st.text_area("İşlem Açıklaması", placeholder="Açıklama metnini girin...", height=80)
-            submit_yeni = st.form_submit_button("📂 Dosya Oluştur", use_container_width=True)
+            islem = st.text_area("Açıklama (Tarihsiz Sabit Bilgi)", placeholder="Açıklama metnini girin...", height=80)
+            submit_yeni = st.form_submit_button("📂 Dosya Oluştur / Güncelle", use_container_width=True)
 
             if submit_yeni:
                 if dosya_no.strip() != "":
                     clean_dosya = dosya_no.strip()
                     clean_firma = firma.strip() if firma.strip() != "" else "-"
+                    clean_aciklama = islem.strip()
                     turkey_tz = pytz.timezone("Europe/Istanbul")
                     simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
 
                     mevcut = next((d for d in kayitlar if str(d.get("Dosya No")) == clean_dosya), None)
                     
                     if mevcut:
-                        if islem.strip() != "":
-                            islem_no = len(mevcut["Islemler"]) + 1
-                            mevcut["Islemler"].append({
-                                "Aciklama": islem.strip(),
-                                "Tarih": simdi
-                            })
-                            verileri_kaydet(kayitlar, f"{clean_dosya} dosyasına {islem_no}. işlem eklendi")
-                            st.success(f"'{clean_dosya}' dosyasına yeni işlem eklendi!")
-                        else:
-                            st.warning("Var olan dosyaya eklenecek işlem açıklamasını giriniz.")
+                        if clean_aciklama != "":
+                            mevcut["Aciklama"] = clean_aciklama
+                        if clean_firma != "-" and clean_firma != "":
+                            mevcut["Firma"] = clean_firma
+                        verileri_kaydet(kayitlar, f"{clean_dosya} dosyasının açıklaması güncellendi")
+                        st.success(f"'{clean_dosya}' dosya bilgileri güncellendi!")
                     else:
                         yeni_dosya = {
                             "Dosya No": clean_dosya,
                             "Firma": clean_firma,
+                            "Aciklama": clean_aciklama,
                             "OlusturmaTarihi": simdi,
-                            "Islemler": [
-                                {
-                                    "Aciklama": islem.strip(),
-                                    "Tarih": simdi
-                                }
-                            ] if islem.strip() != "" else []
+                            "Islemler": []
                         }
                         kayitlar.append(yeni_dosya)
                         verileri_kaydet(kayitlar, f"Yeni dosya eklendi: {clean_dosya}")
@@ -237,7 +226,7 @@ with col_right:
                             sutun2 = parts[1].strip()
                             sutun3 = parts[2].strip()
                             c_firma = parts[3].strip()
-                            c_islem = parts[4].strip() if len(parts) >= 5 else ""
+                            c_aciklama = parts[4].strip() if len(parts) >= 5 else ""
                             
                             c_dno = " ".join(filter(None, [sutun1, sutun2, sutun3]))
                             simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
@@ -245,22 +234,17 @@ with col_right:
                             if c_dno:
                                 mevcut = next((d for d in kayitlar if str(d.get("Dosya No")) == c_dno), None)
                                 if mevcut:
-                                    if c_islem:
-                                        mevcut["Islemler"].append({
-                                            "Aciklama": c_islem,
-                                            "Tarih": simdi
-                                        })
+                                    if c_aciklama:
+                                        mevcut["Aciklama"] = c_aciklama
                                     if c_firma and mevcut.get("Firma") in ["-", ""]:
                                         mevcut["Firma"] = c_firma
                                 else:
                                     kayitlar.append({
                                         "Dosya No": c_dno,
                                         "Firma": c_firma if c_firma else "-",
+                                        "Aciklama": c_aciklama,
                                         "OlusturmaTarihi": simdi,
-                                        "Islemler": [{
-                                            "Aciklama": c_islem,
-                                            "Tarih": simdi
-                                        }] if c_islem else []
+                                        "Islemler": []
                                     })
                                 eklenen_sayi += 1
                                 
@@ -282,30 +266,30 @@ with col_right:
         with col_rapor:
             if st.button("📊 Rapor Oluştur", use_container_width=True):
                 if kayitlar:
-                    # Excel Başlık Satırı (A, B, C, D, E Sütunları)
                     rapor_metni = "DIIBNO1\tDIIBNO2\tDIIBNO3\tFirma Unvanı\tAçıklama\n"
                     
                     for dosya in kayitlar:
                         d_no = dosya.get("Dosya No", "")
                         firma = dosya.get("Firma", "")
+                        ana_aciklama = dosya.get("Aciklama", "")
                         islemler = dosya.get("Islemler", [])
                         
-                        # Dosya numarasını boşluklara göre 3 parçaya böl
                         parcalar = d_no.split(" ")
                         d1 = parcalar[0] if len(parcalar) > 0 else ""
                         d2 = parcalar[1] if len(parcalar) > 1 else ""
                         d3 = " ".join(parcalar[2:]) if len(parcalar) > 2 else ""
                         
-                        # Açıklamaları hazırlama
-                        if len(islemler) == 0:
-                            aciklama_metni = ""
-                        elif len(islemler) == 1:
-                            aciklama_metni = islemler[0].get("Aciklama", "")
-                        else:
-                            aciklama_metni = " | ".join([item.get('Aciklama') for item in islemler if item.get('Aciklama')])
+                        tum_aciklamalar = []
+                        if ana_aciklama.strip() != "":
+                            tum_aciklamalar.append(ana_aciklama.strip())
                         
-                        # Satırı Tab ile ayırarak ekle
-                        rapor_metni += f"{d1}\t{d2}\t{d3}\t{firma}\t{aciklama_metni}\n"
+                        for item in islemler:
+                            if item.get("Aciklama"):
+                                tum_aciklamalar.append(item.get("Aciklama").strip())
+                        
+                        final_aciklama = " | ".join(tum_aciklamalar)
+                        
+                        rapor_metni += f"{d1}\t{d2}\t{d3}\t{firma}\t{final_aciklama}\n"
                     
                     st.session_state["rapor_cikti"] = rapor_metni
                 else:
@@ -323,5 +307,31 @@ with col_right:
             st.code(st.session_state["rapor_cikti"], language="text")
 
     st.divider()
-    st.markdown("##### 💡 Kullanım İpuçları")
-    st.caption("• Oluşturulan rapor metni Tab (`\\t`) karakteri ile ayrıştırıldığı için Excel hücrelerini kaydırmadan tam oturur.")
+    
+    # --- TÜM DOSYALARI SİLME (GÜVENLİ ONAY MEKANİZMASI) ---
+    st.markdown("##### ⚠️ Veritabanı Yönetimi")
+    
+    if "confirm_delete_all" not in st.session_state:
+        st.session_state.confirm_delete_all = False
+
+    if not st.session_state.confirm_delete_all:
+        if st.button("🚨 Tüm Dosyaları Sil", use_container_width=True, type="secondary"):
+            st.session_state.confirm_delete_all = True
+            st.rerun()
+    else:
+        st.error("Tüm veritabanı silinecek! Emin misiniz?")
+        col_evet, col_hayir = st.columns(2)
+        
+        with col_evet:
+            if st.button("✅ Evet, Tümünü Sil", type="primary", use_container_width=True):
+                verileri_kaydet([], "Tüm dosyalar veritabanından silindi")
+                st.session_state.confirm_delete_all = False
+                if "rapor_cikti" in st.session_state:
+                    st.session_state["rapor_cikti"] = ""
+                st.success("Tüm dosyalar başarıyla silindi!")
+                st.rerun()
+                
+        with col_hayir:
+            if st.button("❌ İptal Et", use_container_width=True):
+                st.session_state.confirm_delete_all = False
+                st.rerun()
