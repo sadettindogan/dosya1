@@ -58,6 +58,10 @@ def verileri_getir():
                     item["BagliDosya"] = False
                 if "KapatmaRed" not in item:
                     item["KapatmaRed"] = False
+                if "TescildeBekleyen" not in item:
+                    item["TescildeBekleyen"] = False
+                if "KapatmaAsamasinda" not in item:
+                    item["KapatmaAsamasinda"] = False
                 yeni_format_data.append(item)
             return yeni_format_data
         return []
@@ -83,18 +87,24 @@ def verileri_kaydet(yeni_kayitlar, mesaj):
 
 kayitlar = verileri_getir()
 
-# TOPLAM, BAĞLI VE KAPATMA TALEBİ REDDEDİLEN DOSYA SAYISI GÖSTERGELERİ
+# TOPLAM VE DURUM SAYILARI GÖSTERGELERİ
 toplam_dosya_sayisi = len(kayitlar)
 bagli_dosya_sayisi = sum(1 for d in kayitlar if d.get("BagliDosya", False))
 kapatma_red_sayisi = sum(1 for d in kayitlar if d.get("KapatmaRed", False))
+tescilde_bekleyen_sayisi = sum(1 for d in kayitlar if d.get("TescildeBekleyen", False))
+kapatma_asamasinda_sayisi = sum(1 for d in kayitlar if d.get("KapatmaAsamasinda", False))
 
-col_m1, col_m2, col_m3, _ = st.columns([1, 1, 1.2, 1])
+col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
 with col_m1:
-    st.metric(label="📊 Toplam Kayıtlı Dosya", value=f"{toplam_dosya_sayisi} Adet")
+    st.metric(label="📊 Toplam Dosya", value=f"{toplam_dosya_sayisi}")
 with col_m2:
-    st.metric(label="🔗 Bağlı Dosya Sayısı", value=f"{bagli_dosya_sayisi} Adet")
+    st.metric(label="🔗 Bağlı Dosya", value=f"{bagli_dosya_sayisi}")
 with col_m3:
-    st.metric(label="🚫 Kapatma Talebi Reddedilen", value=f"{kapatma_red_sayisi} Adet")
+    st.metric(label="🚫 Kapatma Red", value=f"{kapatma_red_sayisi}")
+with col_m4:
+    st.metric(label="⏳ Tescilde Bekleyen", value=f"{tescilde_bekleyen_sayisi}")
+with col_m5:
+    st.metric(label="🏁 Kapatma Aşamasında", value=f"{kapatma_asamasinda_sayisi}")
 
 st.markdown("---")
 
@@ -130,6 +140,8 @@ with col_left:
                 islemler = dosya.get("Islemler", [])
                 bagli_durumu = dosya.get("BagliDosya", False)
                 kapatma_red_durumu = dosya.get("KapatmaRed", False)
+                tescilde_durumu = dosya.get("TescildeBekleyen", False)
+                kapatma_asamasinda_durumu = dosya.get("KapatmaAsamasinda", False)
                 
                 edit_key = f"edit_aciklama_{d_no}_{d_idx}"
                 if edit_key not in st.session_state:
@@ -141,9 +153,11 @@ with col_left:
                 # Kart başlığına simge ekleme
                 bagli_icon = "🔗 " if bagli_durumu else ""
                 red_icon = "🚫 " if kapatma_red_durumu else ""
+                tescild_icon = "⏳ " if tescilde_durumu else ""
+                kapatma_icon = "🏁 " if kapatma_asamasinda_durumu else ""
                 
                 with col_exp:
-                    exp_container = st.expander(f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} {bagli_icon}{red_icon}({len(islemler)} İşlem Adımı)", expanded=False)
+                    exp_container = st.expander(f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} {bagli_icon}{red_icon}{tescild_icon}{kapatma_icon}({len(islemler)} İşlem Adımı)", expanded=False)
                 
                 with col_dosya_sil:
                     if st.button("🗑️ Dosyayı Sil", key=f"del_dosya_btn_{d_no}_{d_idx}", use_container_width=True, help="Bu dosyayı tüm bilgileriyle sil"):
@@ -153,27 +167,38 @@ with col_left:
                         st.rerun()
 
                 with exp_container:
-                    # --- DOSYA AÇIKLAMASI VE DURUM KUTUCUKLARI (BAĞLI / KAPATMA RED) ---
-                    col_aciklama_baslik, col_bagli_box, col_red_box = st.columns([2, 1, 1.2], vertical_alignment="center")
+                    # --- DOSYA AÇIKLAMASI VE DURUM KUTUCUKLARI (4 KUTU) ---
+                    col_b1, col_b2, col_b3, col_b4 = st.columns(4)
                     
-                    with col_aciklama_baslik:
-                        st.markdown("**📝 Dosya Açıklaması**")
-                    
-                    with col_bagli_box:
+                    with col_b1:
                         yeni_bagli = st.checkbox("🔗 Bağlı Dosya", value=bagli_durumu, key=f"chk_bagli_{d_no}_{d_idx}")
                         if yeni_bagli != bagli_durumu:
                             dosya["BagliDosya"] = yeni_bagli
-                            durum_metin = "bağlandı" if yeni_bagli else "bağlantısı kaldırıldı"
-                            verileri_kaydet(kayitlar, f"{d_no} dosyasının bağlı dosya durumu güncellendi ({durum_metin})")
+                            verileri_kaydet(kayitlar, f"{d_no} bağlı dosya durumu güncellendi")
                             st.rerun()
 
-                    with col_red_box:
-                        yeni_red = st.checkbox("❌ Kapatma Talebi Reddedilen", value=kapatma_red_durumu, key=f"chk_red_{d_no}_{d_idx}")
+                    with col_b2:
+                        yeni_red = st.checkbox("❌ Kapatma Red", value=kapatma_red_durumu, key=f"chk_red_{d_no}_{d_idx}")
                         if yeni_red != kapatma_red_durumu:
                             dosya["KapatmaRed"] = yeni_red
-                            durum_metin = "reddedildi olarak işaretlendi" if yeni_red else "red işareti kaldırıldı"
-                            verileri_kaydet(kayitlar, f"{d_no} dosyasının kapatma talebi red durumu güncellendi ({durum_metin})")
+                            verileri_kaydet(kayitlar, f"{d_no} kapatma red durumu güncellendi")
                             st.rerun()
+
+                    with col_b3:
+                        yeni_tescild = st.checkbox("⏳ Tescilde Bekleyen", value=tescilde_durumu, key=f"chk_tescild_{d_no}_{d_idx}")
+                        if yeni_tescild != tescilde_durumu:
+                            dosya["TescildeBekleyen"] = yeni_tescild
+                            verileri_kaydet(kayitlar, f"{d_no} tescilde bekleyen durumu güncellendi")
+                            st.rerun()
+
+                    with col_b4:
+                        yeni_kapatma = st.checkbox("🏁 Kapatma Aşamasında", value=kapatma_asamasinda_durumu, key=f"chk_kapatma_{d_no}_{d_idx}")
+                        if yeni_kapatma != kapatma_asamasinda_durumu:
+                            dosya["KapatmaAsamasinda"] = yeni_kapatma
+                            verileri_kaydet(kayitlar, f"{d_no} kapatma aşamasında durumu güncellendi")
+                            st.rerun()
+
+                    st.markdown("**📝 Dosya Açıklaması**")
 
                     if not st.session_state[edit_key]:
                         c_aciklama, c_edit_btn = st.columns([5, 1], vertical_alignment="center")
@@ -275,11 +300,13 @@ with col_right:
             firma = st.text_input("Firma Unvanı", placeholder="Örn: ISIK CELIK SAN.VE TIC.A.S.")
             islem = st.text_area("Açıklama (Tarihsiz Sabit Bilgi)", placeholder="Açıklama metnini girin...", height=80)
             
-            c_in_bagli, c_in_red = st.columns(2)
-            with c_in_bagli:
+            c_in1, c_in2 = st.columns(2)
+            with c_in1:
                 bagli_durumu_input = st.checkbox("🔗 Bağlı Dosya")
-            with c_in_red:
-                kapatma_red_input = st.checkbox("❌ Kapatma Talebi Reddedilen")
+                tescilde_durumu_input = st.checkbox("⏳ Tescilde Bekleyen")
+            with c_in2:
+                kapatma_red_input = st.checkbox("❌ Kapatma Red")
+                kapatma_asamasinda_input = st.checkbox("🏁 Kapatma Aşamasında")
 
             submit_yeni = st.form_submit_button("📂 Dosya Oluştur / Güncelle", use_container_width=True)
 
@@ -300,6 +327,8 @@ with col_right:
                             mevcut["Firma"] = clean_firma
                         mevcut["BagliDosya"] = bagli_durumu_input
                         mevcut["KapatmaRed"] = kapatma_red_input
+                        mevcut["TescildeBekleyen"] = tescilde_durumu_input
+                        mevcut["KapatmaAsamasinda"] = kapatma_asamasinda_input
                         verileri_kaydet(kayitlar, f"{clean_dosya} dosyasının bilgileri güncellendi")
                         st.success(f"'{clean_dosya}' dosya bilgileri güncellendi!")
                     else:
@@ -309,6 +338,8 @@ with col_right:
                             "Aciklama": clean_aciklama,
                             "BagliDosya": bagli_durumu_input,
                             "KapatmaRed": kapatma_red_input,
+                            "TescildeBekleyen": tescilde_durumu_input,
+                            "KapatmaAsamasinda": kapatma_asamasinda_input,
                             "OlusturmaTarihi": simdi,
                             "Islemler": []
                         }
@@ -360,6 +391,8 @@ with col_right:
                                         "Aciklama": c_aciklama,
                                         "BagliDosya": False,
                                         "KapatmaRed": False,
+                                        "TescildeBekleyen": False,
+                                        "KapatmaAsamasinda": False,
                                         "OlusturmaTarihi": simdi,
                                         "Islemler": []
                                     })
