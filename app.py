@@ -61,6 +61,14 @@ def verileri_kaydet(yeni_kayitlar, mesaj):
 
 kayitlar = verileri_getir()
 
+# TOPLAM DOSYA SAYISI GÖSTERGESİ (En Üst Bölüm)
+toplam_dosya_sayisi = len(kayitlar)
+col_m1, _ = st.columns([1, 3])
+with col_m1:
+    st.metric(label="📊 Toplam Kayıtlı Dosya Sayısı", value=f"{toplam_dosya_sayisi} Adet")
+
+st.markdown("---")
+
 # EKRAN YAPILANDIRMASI: Sol Taraf %65, Sağ Taraf %35
 col_left, col_right = st.columns([65, 35], gap="large")
 
@@ -92,15 +100,47 @@ with col_left:
                 ana_aciklama = dosya.get("Aciklama", "")
                 islemler = dosya.get("Islemler", [])
                 
+                edit_key = f"edit_aciklama_{d_no}_{d_idx}"
+                if edit_key not in st.session_state:
+                    st.session_state[edit_key] = False
+
                 with st.expander(f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} ({len(islemler)} İşlem Adımı)", expanded=False):
                     
-                    # Sabit Açıklama Alanı
+                    # --- DÜZENLENEBİLİR DOSYA AÇIKLAMASI ALANI ---
                     st.markdown("##### 📝 Dosya Açıklaması")
-                    if ana_aciklama.strip() != "":
-                        st.info(ana_aciklama)
-                    else:
-                        st.caption("*Bu dosya için henüz bir ana açıklama eklenmemiş.*")
                     
+                    if not st.session_state[edit_key]:
+                        c_aciklama, c_edit_btn = st.columns([5, 1], vertical_alignment="center")
+                        with c_aciklama:
+                            if ana_aciklama.strip() != "":
+                                st.info(ana_aciklama)
+                            else:
+                                st.caption("*Bu dosya için henüz bir ana açıklama eklenmemiş.*")
+                        with c_edit_btn:
+                            if st.button("✏️ Düzenle", key=f"btn_edit_{d_no}_{d_idx}", use_container_width=True):
+                                st.session_state[edit_key] = True
+                                st.rerun()
+                    else:
+                        with st.form(key=f"form_edit_aciklama_{d_no}_{d_idx}"):
+                            yeni_aciklama_val = st.text_area("Açıklamayı Güncelle", value=ana_aciklama, height=90)
+                            col_save, col_cancel = st.columns([1, 1])
+                            
+                            with col_save:
+                                submit_aciklama = st.form_submit_button("💾 Kaydet", use_container_width=True)
+                            with col_cancel:
+                                cancel_aciklama = st.form_submit_button("❌ İptal", use_container_width=True)
+                                
+                            if submit_aciklama:
+                                dosya["Aciklama"] = yeni_aciklama_val.strip()
+                                verileri_kaydet(kayitlar, f"{d_no} dosyasının açıklaması güncellendi")
+                                st.session_state[edit_key] = False
+                                st.success("Açıklama güncellendi!")
+                                st.rerun()
+                                
+                            if cancel_aciklama:
+                                st.session_state[edit_key] = False
+                                st.rerun()
+
                     st.markdown("---")
                     st.markdown(f"**➕ `{d_no}` Nolu Dosyaya Yeni İşlem Ekle**")
                     
