@@ -44,17 +44,17 @@ def verileri_kaydet(yeni_kayitlar, sha, mesaj):
 
 kayitlar, file_sha = verileri_getir()
 
-# Session State kontrolleri
+# Session State kontrolleri (Düzenleme modu için)
 if "editing_target" not in st.session_state:
     st.session_state.editing_target = None
 
-# --- KAYIT / DÜZENLEME FORMU ---
+# --- KAYIT / İŞLEM EKLEME FORMU ---
 if st.session_state.editing_target:
-    st.subheader("✏️ Kaydı Düzenle")
-    default_dosya = st.session_state.editing_target.get("Dosya No", "")
-    default_islem = st.session_state.editing_target.get("Yapılan İşlem", "")
+    st.subheader("✏️ İşlem Adımını Düzenle")
+    default_dosya = st.session_state.editing_target["dosya_no"]
+    default_islem = st.session_state.editing_target["islem_text"]
 else:
-    st.subheader("➕ Yeni İşlem Ekle")
+    st.subheader("➕ Yeni İşlem / Dosya Ekle")
     default_dosya = ""
     default_islem = ""
 
@@ -76,37 +76,56 @@ with st.form("kayit_formu", clear_on_submit=True):
         if dosya_no.strip() != "" and islem.strip() != "":
             turkey_tz = pytz.timezone("Europe/Istanbul")
             simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
-            
+             clean_dosya = dosya_no.strip()
+
             if st.session_state.editing_target:
-                # DÜZENLEME MODU: Güncelleme geçmişi ekleme
-                target_id = st.session_state.editing_target.get("Tarih")
-                for k in kayitlar:
-                    if k.get("Tarih") == target_id:
-                        k["Dosya No"] = dosya_no
-                        k["Yapılan İşlem"] = islem
-                        
-                        # Güncellemeler listesi yoksa oluştur
-                        if "Guncellemeler" not in k:
-                            k["Guncellemeler"] = []
-                        
-                        guncelleme_sayisi = len(k["Guncellemeler"]) + 1
-                        k["Guncellemeler"].append(f"{guncelleme_sayisi}. Güncelleme: {simdi}")
+                # DÜZENLEME MODU: Mevcut adımı güncelle
+                t_dosya = st.session_state.editing_target["dosya_no"]
+                t_idx = st.session_state.editing_target["islem_idx"]
+                
+                for dosya in kayitlar:
+                    if str(dosya.get("Dosya No")) == str(t_dosya):
+                        dosya["Islemler"][t_idx]["Aciklama"] = islem
+                        dosya["Islemler"][t_idx]["Tarih"] = f"{simdi} (Düzenlendi)"
                         break
                 
-                verileri_kaydet(kayitlar, file_sha, f"Kayıt güncellendi: {dosya_no}")
+                verileri_kaydet(kayitlar, file_sha, f"İşlem güncellendi: {clean_dosya}")
                 st.session_state.editing_target = None
-                st.success("Kayıt ve güncelleme geçmişi başarıyla kaydedildi!")
+                st.success("İşlem adımı başarıyla güncellendi!")
             else:
-                # YENİ KAYIT MODU
-                yeni_kayit = {
-                    "Tarih": simdi,
-                    "Dosya No": dosya_no,
-                    "Yapılan İşlem": islem,
-                    "Guncellemeler": []
-                }
-                kayitlar.append(yeni_kayit)
-                verileri_kaydet(kayitlar, file_sha, f"Yeni kayıt eklendi: {dosya_no}")
-                st.success(f"'{dosya_no}' numaralı dosya işlemi eklendi!")
+                # YENİ EKLEME MODU: Dosya var mı kontrol et
+                mevcut_dosya = None
+                for d in kayitlar:
+                    if str(d.get("Dosya No")) == clean_dosya:
+                        mevcut_dosya = d
+                        break
+                
+                if mevcut_dosya:
+                    # Dosya zaten var, altına yeni işlem adımı ekle
+                    islem_no = len(mevcut_dosya["Islemler"]) + 1
+                    mevcut_dosya["Islemler"].append({
+                        "Adim": islem_no,
+                        "Aciklama": islem,
+                        "Tarih": simdi
+                    })
+                    verileri_kaydet(kayitlar, file_sha, f"{clean_dosya} dosyasına {islem_no}. işlem eklendi")
+                    st.success(f"'{clean_dosya}' numaralı dosyaya {islem_no}. işlem adımı eklendi!")
+                else:
+                    # Yeni dosya kaydı ve ilk işlem
+                    yeni_dosya_kaydi = {
+                        "Dosya No": clean_dosya,
+                        "OlusturmaTarihi": simdi,
+                        "Islemler": [
+                            {
+                                "Adim": 1,
+                                "Aciklama": islem,
+                                "Tarih": simdi
+                            }
+                        ]
+                    }
+                    kayitlar.append(yeni_dosya_kaydi)
+                    verileri_kaydet(kayitlar, file_sha, f"Yeni dosya eklendi: {clean_dosya}")
+                    st.success(f"'{clean_dosya}' numaralı dosya ve 1. işlemi oluşturuldu!")
             
             st.rerun()
         else:
@@ -114,49 +133,62 @@ with st.form("kayit_formu", clear_on_submit=True):
 
 # --- İZLEME VE GEÇMİŞ EKRANI ---
 st.divider()
-st.subheader("📋 Geçmiş Kayıtlar")
+st.subheader("📋 Kayıtlı Dosyalar ve İşlem Geçmişi")
 
 arama = st.text_input("Dosya No ile Arama Yap", "")
 
 if kayitlar:
-    sirali_kayitlar = sorted(kayitlar, key=lambda x: x.get("Tarih", ""), reverse=True)
+    # Dosyaları en son işlem gören üstte olacak şekilde sırala
+    sirali_dosyalar = sorted(kayitlar, key=lambda x: x.get("OlusturmaTarihi", ""), reverse=True)
     
     if arama:
-        gosterilecek_kayitlar = [k for k in sirali_kayitlar if arama.lower() in str(k.get("Dosya No", "")).lower()]
+        gosterilecek_dosyalar = [d for d in sirali_dosyalar if arama.lower() in str(d.get("Dosya No", "")).lower()]
     else:
-        gosterilecek_kayitlar = sirali_kayitlar
+        gosterilecek_dosyalar = sirali_dosyalar
 
-    if gosterilecek_kayitlar:
-        for idx, kayit in enumerate(gosterilecek_kayitlar):
-            with st.container():
-                col1, col2, col3 = st.columns([4, 1, 1])
+    if gosterilecek_dosyalar:
+        for d_idx, dosya in enumerate(gosterilecek_dosyalar):
+            d_no = dosya.get("Dosya No")
+            
+            with st.expander(f"📁 **Dosya No: {d_no}**", expanded=True):
+                islemler = dosya.get("Islemler", [])
                 
-                with col1:
-                    st.markdown(f"**Dosya No:** `{kayit.get('Dosya No')}` | **Kayıt Tarihi:** {kayit.get('Tarih')}")
-                    st.write(f"**İşlem:** {kayit.get('Yapılan İşlem')}")
+                for i_idx, islem in enumerate(islemler):
+                    col_info, col_edit, col_del = st.columns([5, 1, 1])
                     
-                    # Eğer güncelleme yapılmışsa tarihçesini göster
-                    guncellemeler = kayit.get("Guncellemeler", [])
-                    if guncellemeler:
-                        st.caption("🕒 **Güncelleme Geçmişi:**")
-                        for guncelleme in guncellemeler:
-                            st.caption(f"• {guncelleme}")
-                
-                with col2:
-                    if st.button("✏️ Düzenle", key=f"edit_{kayit.get('Tarih')}_{idx}"):
-                        st.session_state.editing_target = kayit
-                        st.rerun()
-
-                with col3:
-                    if st.button("🗑️ Sil", key=f"delete_{kayit.get('Tarih')}_{idx}"):
-                        kayitlar.remove(kayit)
-                        verileri_kaydet(kayitlar, file_sha, f"Kayıt silindi: {kayit.get('Dosya No')}")
-                        if st.session_state.editing_target == kayit:
+                    with col_info:
+                        st.markdown(f"**{i_idx + 1}. İşlem:** {islem.get('Aciklama')}")
+                        st.caption(f"🕒 *Tarih:* {islem.get('Tarih')}")
+                    
+                    with col_edit:
+                        if st.button("✏️", key=f"edit_{d_no}_{i_idx}"):
+                            st.session_state.editing_target = {
+                                "dosya_no": d_no,
+                                "islem_idx": i_idx,
+                                "islem_text": islem.get('Aciklama')
+                            }
+                            st.rerun()
+                            
+                    with col_del:
+                        if st.button("🗑️", key=f"del_{d_no}_{i_idx}"):
+                            islemler.pop(i_idx)
+                            # Eğer dosyadaki tüm işlemler silinirse dosyayı tamamen kaldır
+                            if len(islemler) == 0:
+                                kayitlar.remove(dosya)
+                            else:
+                                # Adım numaralarını yeniden hizala
+                                for n, item in enumerate(islemler):
+                                    item["Adim"] = n + 1
+                                    
+                            verileri_kaydet(kayitlar, file_sha, f"{d_no} dosyasından işlem silindi")
                             st.session_state.editing_target = None
-                        st.success("Kayıt silindi!")
-                        st.rerun()
-                st.divider()
+                            st.success("İşlem silindi!")
+                            st.rerun()
+                    
+                    if i_idx < len(islemler) - 1:
+                        st.divider()
+            st.write("") # Boşluk
     else:
-        st.info("Aramanıza uygun kayıt bulunamadı.")
+        st.info("Aramanıza uygun dosya bulunamadı.")
 else:
-    st.info("Henüz kayıt bulunmuyor.")
+    st.info("Henüz kayıtlı dosya bulunmuyor.")
