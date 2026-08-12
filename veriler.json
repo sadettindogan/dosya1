@@ -4,7 +4,12 @@
     "Firma": "ISIK CELIK SAN.VE TIC.A.S.",
     "Aciklama": "",
     "OlusturmaTarihi": "2026-08-12 12:03:48",
-    "Islemler": [],
+    "Islemler": [
+      {
+        "Aciklama": "ekspertiz incelendi",
+        "Tarih": "2026-08-12 20:18:50"
+      }
+    ],
     "BagliDosya": false,
     "KapatmaRed": false,
     "TescildeBekleyen": false,
