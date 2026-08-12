@@ -187,10 +187,11 @@ with col_left:
                     else:
                         mail_baslik_eki = " 📧 (mail atıldı)"
 
-                col_exp, col_dosya_sil = st.columns([92, 8], vertical_alignment="center")
+                # BAŞLIK ALANINI YATAYDA 1/3 DARALTALIM ([60, 40] DÜZENİ)
+                col_exp, _space, col_dosya_sil = st.columns([60, 33, 7], vertical_alignment="center")
                 
                 with col_exp:
-                    exp_header = f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} {simgeler}({len(islemler)} İşlem){mail_baslik_eki}"
+                    exp_header = f"📂 **Dosya No:** {d_no}\n\n🏢 **Firma:** {firma} {simgeler}({len(islemler)} İşlem){mail_baslik_eki}"
                     exp_container = st.expander(exp_header, expanded=False)
                 
                 # KÜÇÜK SİL BUTONU VE EMİN MİSİNİZ ONAYI
