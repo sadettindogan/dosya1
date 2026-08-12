@@ -3,7 +3,6 @@ import pandas as pd
 from datetime import datetime
 import json
 import pytz
-import io
 from github import Github
 
 # Sayfa Yapılandırması (Geniş Ekran)
@@ -44,6 +43,7 @@ def verileri_getir():
                     else:
                         yeni_format_data.append({
                             "Dosya No": d_no,
+                            "Firma": item.get("Firma", "-"),
                             "OlusturmaTarihi": tarih,
                             "Islemler": [{"Aciklama": islem_text, "Tarih": tarih}]
                         })
@@ -84,22 +84,26 @@ with col_left:
     
     search_col, _ = st.columns([1, 2])
     with search_col:
-        arama = st.text_input("🔍 Dosya No ile Filtrele / Ara", "", placeholder="Örn: 1001")
+        arama = st.text_input("🔍 Dosya No veya Firma ile Ara", "", placeholder="Örn: 1001 veya Firma Adı")
 
     if kayitlar:
         sirali_dosyalar = sorted(kayitlar, key=lambda x: x.get("OlusturmaTarihi", ""), reverse=True)
         
         if arama:
-            gosterilecek_dosyalar = [d for d in sirali_dosyalar if arama.lower() in str(d.get("Dosya No", "")).lower()]
+            gosterilecek_dosyalar = [
+                d for d in sirali_dosyalar 
+                if arama.lower() in str(d.get("Dosya No", "")).lower() or arama.lower() in str(d.get("Firma", "")).lower()
+            ]
         else:
             gosterilecek_dosyalar = sirali_dosyalar
 
         if gosterilecek_dosyalar:
             for d_idx, dosya in enumerate(gosterilecek_dosyalar):
                 d_no = dosya.get("Dosya No")
+                firma = dosya.get("Firma", "-")
                 islemler = dosya.get("Islemler", [])
                 
-                with st.expander(f"📂 DOSYA NO: **{d_no}** | (Toplam {len(islemler)} İşlem Adımı)", expanded=False):
+                with st.expander(f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} ({len(islemler)} İşlem)", expanded=False):
                     
                     st.markdown(f"**➕ `{d_no}` Nolu Dosyaya Yeni İşlem Ekle**")
                     
@@ -167,17 +171,15 @@ with col_right:
     # 1. TEKLİ DOSYA EKLEME SEKMESİ
     with tab_tekli:
         with st.form("yeni_dosya_formu_sag", clear_on_submit=True):
-            col_dno, col_btn_tek = st.columns([2, 1], vertical_alignment="bottom")
-            with col_dno:
-                dosya_no = st.text_input("Dosya No", placeholder="Örn: 2026-101")
-            with col_btn_tek:
-                submit_yeni = st.form_submit_button("📂 Dosya Oluştur", use_container_width=True)
-                
-            islem = st.text_area("İlk İşlem Açıklaması", placeholder="Dosya için başlatılan ilk işlemi girin...", height=80)
+            dosya_no = st.text_input("Dosya No / Adı (1.-3. Sütun Bilişimi)", placeholder="Örn: 2026 IST 101")
+            firma = st.text_input("Firma Adı (4. Sütun)", placeholder="Örn: ABC Dış Ticaret A.Ş.")
+            islem = st.text_area("İlk İşlem Açıklaması (5. Sütun)", placeholder="Dosya için başlatılan ilk işlemi girin...", height=80)
+            submit_yeni = st.form_submit_button("📂 Dosya Oluştur", use_container_width=True)
 
             if submit_yeni:
                 if dosya_no.strip() != "" and islem.strip() != "":
                     clean_dosya = dosya_no.strip()
+                    clean_firma = firma.strip() if firma.strip() != "" else "-"
                     turkey_tz = pytz.timezone("Europe/Istanbul")
                     simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -194,6 +196,7 @@ with col_right:
                     else:
                         yeni_dosya = {
                             "Dosya No": clean_dosya,
+                            "Firma": clean_firma,
                             "OlusturmaTarihi": simdi,
                             "Islemler": [
                                 {
@@ -207,14 +210,15 @@ with col_right:
                         st.success(f"'{clean_dosya}' nolu dosya başarıyla oluşturuldu!")
                     st.rerun()
                 else:
-                    st.warning("Lütfen hem Dosya No hem de işlem açıklamasını girin.")
+                    st.warning("Lütfen Dosya No ve Açıklama alanlarını doldurun.")
 
-    # 2. EXCEL'DEN TOPLU VERİ YAPIŞTIRMA SEKMESİ
+    # 2. EXCEL'DEN TOPLU VERİ YAPIŞTIRMA SEKMESİ (5 SÜTUNLU YAPININ İŞLENMESİ)
     with tab_excel:
-        st.caption("Excel'de seçtiğiniz **2 Sütunu (1.Sütun: Dosya No | 2.Sütun: Açıklama)** kopyalayıp aşağıdaki kutuya yapıştırın:")
+        st.caption("Excel'de seçtiğiniz **5 Sütunu** kopyalayıp aşağıdaki kutuya yapıştırın:")
+        st.caption("📌 **Sütun Düzeyi:** `1.Parça` | `2.Parça` | `3.Parça` | `Firma Adı` | `Açıklama`")
         
         with st.form("excel_paste_form", clear_on_submit=True):
-            pasted_data = st.text_area("Excel Verisini Buraya Yapıştırın", placeholder="1001\tAçıklama 1\n1002\tAçıklama 2", height=120)
+            pasted_data = st.text_area("Excel Verisini Buraya Yapıştırın", placeholder="2026\tIST\t101\tABC Lojistik\tAçıklama metni", height=120)
             submit_excel = st.form_submit_button("⚡ Toplu Verileri Kaydet", use_container_width=True)
             
             if submit_excel:
@@ -222,13 +226,19 @@ with col_right:
                     turkey_tz = pytz.timezone("Europe/Istanbul")
                     eklenen_sayi = 0
                     
-                    # Satır satır okuma
                     lines = pasted_data.strip().split("\n")
                     for line in lines:
                         parts = line.split("\t")
-                        if len(parts) >= 2:
-                            c_dno = parts[0].strip()
-                            c_islem = parts[1].strip()
+                        # 5 Sütunluk yapının ayrıştırılması
+                        if len(parts) >= 5:
+                            sutun1 = parts[0].strip()
+                            sutun2 = parts[1].strip()
+                            sutun3 = parts[2].strip()
+                            c_firma = parts[3].strip()
+                            c_islem = parts[4].strip()
+                            
+                            # İlk 3 sütunu arada boşluk olacak şekilde birleştirme
+                            c_dno = " ".join(filter(None, [sutun1, sutun2, sutun3]))
                             simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
                             
                             if c_dno and c_islem:
@@ -238,9 +248,13 @@ with col_right:
                                         "Aciklama": c_islem,
                                         "Tarih": simdi
                                     })
+                                    # Firma boşsa güncelle
+                                    if c_firma and mevcut.get("Firma") in ["-", ""]:
+                                        mevcut["Firma"] = c_firma
                                 else:
                                     kayitlar.append({
                                         "Dosya No": c_dno,
+                                        "Firma": c_firma if c_firma else "-",
                                         "OlusturmaTarihi": simdi,
                                         "Islemler": [{
                                             "Aciklama": c_islem,
@@ -254,11 +268,11 @@ with col_right:
                         st.success(f"Toplam {eklenen_sayi} adet dosya/işlem kaydı işlendi!")
                         st.rerun()
                     else:
-                        st.warning("Geçerli formatta veri bulunamadı. 2 sütun kopyaladığınızdan emin olun.")
+                        st.warning("Geçerli formatta veri bulunamadı. Lütfen en az 5 sütun seçip kopyaladığınızdan emin olun.")
                 else:
                     st.warning("Yapıştırılan alan boş olamaz.")
 
     st.divider()
     st.markdown("##### 💡 Kullanım İpuçları")
-    st.caption("• Tekli girişte Dosya No daha önceden varsa otomatik yeni işlem adımı olarak altına eklenir.")
-    st.caption("• Excel yapıştırma özelliğinde başlık satırı dahil etmeden kopyalama yapabilirsiniz.")
+    st.caption("• Excel yapıştırmada ilk 3 sütun otomatikleştirilerek tek bir dosya adına dönüştürülür.")
+    st.caption("• Aynı dosya numarasıyla denk gelen satırlarda yeni işlem adımı otomatik alt alta dizilir.")
