@@ -44,7 +44,7 @@ def verileri_kaydet(yeni_kayitlar, sha, mesaj):
 
 kayitlar, file_sha = verileri_getir()
 
-# Düzenleme modunu kontrol etmek için Session State kullanımı
+# Session State kontrolleri
 if "editing_target" not in st.session_state:
     st.session_state.editing_target = None
 
@@ -77,24 +77,32 @@ with st.form("kayit_formu", clear_on_submit=True):
             turkey_tz = pytz.timezone("Europe/Istanbul")
             simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
             
-            # Eğer DÜZENLEME modundaysak eski kaydı güncelle
             if st.session_state.editing_target:
-                target_tarih = st.session_state.editing_target.get("Tarih")
+                # DÜZENLEME MODU: Güncelleme geçmişi ekleme
+                target_id = st.session_state.editing_target.get("Tarih")
                 for k in kayitlar:
-                    if k.get("Tarih") == target_tarih:
+                    if k.get("Tarih") == target_id:
                         k["Dosya No"] = dosya_no
                         k["Yapılan İşlem"] = islem
-                        # Opsiyonel: Güncelleme tarihini eklemek isterseniz: k["Tarih"] = simdi
+                        
+                        # Güncellemeler listesi yoksa oluştur
+                        if "Guncellemeler" not in k:
+                            k["Guncellemeler"] = []
+                        
+                        guncelleme_sayisi = len(k["Guncellemeler"]) + 1
+                        k["Guncellemeler"].append(f"{guncelleme_sayisi}. Güncelleme: {simdi}")
                         break
+                
                 verileri_kaydet(kayitlar, file_sha, f"Kayıt güncellendi: {dosya_no}")
                 st.session_state.editing_target = None
-                st.success("Kayıt başarıyla güncellendi!")
+                st.success("Kayıt ve güncelleme geçmişi başarıyla kaydedildi!")
             else:
-                # Yeni Kayıt Ekleme
+                # YENİ KAYIT MODU
                 yeni_kayit = {
                     "Tarih": simdi,
                     "Dosya No": dosya_no,
-                    "Yapılan İşlem": islem
+                    "Yapılan İşlem": islem,
+                    "Guncellemeler": []
                 }
                 kayitlar.append(yeni_kayit)
                 verileri_kaydet(kayitlar, file_sha, f"Yeni kayıt eklendi: {dosya_no}")
@@ -104,7 +112,7 @@ with st.form("kayit_formu", clear_on_submit=True):
         else:
             st.warning("Lütfen tüm alanları doldurun.")
 
-# --- İZLEME, DÜZENLEME VE SİLME EKRANI ---
+# --- İZLEME VE GEÇMİŞ EKRANI ---
 st.divider()
 st.subheader("📋 Geçmiş Kayıtlar")
 
@@ -124,8 +132,15 @@ if kayitlar:
                 col1, col2, col3 = st.columns([4, 1, 1])
                 
                 with col1:
-                    st.markdown(f"**Dosya No:** `{kayit.get('Dosya No')}` | **Tarih:** {kayit.get('Tarih')}")
+                    st.markdown(f"**Dosya No:** `{kayit.get('Dosya No')}` | **Kayıt Tarihi:** {kayit.get('Tarih')}")
                     st.write(f"**İşlem:** {kayit.get('Yapılan İşlem')}")
+                    
+                    # Eğer güncelleme yapılmışsa tarihçesini göster
+                    guncellemeler = kayit.get("Guncellemeler", [])
+                    if guncellemeler:
+                        st.caption("🕒 **Güncelleme Geçmişi:**")
+                        for guncelleme in guncellemeler:
+                            st.caption(f"• {guncelleme}")
                 
                 with col2:
                     if st.button("✏️ Düzenle", key=f"edit_{kayit.get('Tarih')}_{idx}"):
