@@ -54,6 +54,8 @@ def verileri_getir():
                     item["Aciklama"] = ""
                 if "Islemler" not in item:
                     item["Islemler"] = []
+                if "BagliDosya" not in item:
+                    item["BagliDosya"] = False
                 yeni_format_data.append(item)
             return yeni_format_data
         return []
@@ -79,11 +81,15 @@ def verileri_kaydet(yeni_kayitlar, mesaj):
 
 kayitlar = verileri_getir()
 
-# TOPLAM DOSYA SAYISI GÖSTERGESİ
+# TOPLAM VE BAĞLI DOSYA SAYISI GÖSTERGELERİ
 toplam_dosya_sayisi = len(kayitlar)
-col_m1, _ = st.columns([1, 3])
+bagli_dosya_sayisi = sum(1 for d in kayitlar if d.get("BagliDosya", False))
+
+col_m1, col_m2, _ = st.columns([1, 1, 2])
 with col_m1:
-    st.metric(label="📊 Toplam Kayıtlı Dosya Sayısı", value=f"{toplam_dosya_sayisi} Adet")
+    st.metric(label="📊 Toplam Kayıtlı Dosya", value=f"{toplam_dosya_sayisi} Adet")
+with col_m2:
+    st.metric(label="🔗 Bağlı Dosya Sayısı", value=f"{bagli_dosya_sayisi} Adet")
 
 st.markdown("---")
 
@@ -117,6 +123,7 @@ with col_left:
                 firma = dosya.get("Firma", "-")
                 ana_aciklama = dosya.get("Aciklama", "")
                 islemler = dosya.get("Islemler", [])
+                bagli_durumu = dosya.get("BagliDosya", False)
                 
                 edit_key = f"edit_aciklama_{d_no}_{d_idx}"
                 if edit_key not in st.session_state:
@@ -125,8 +132,11 @@ with col_left:
                 # SAĞ TARAFA DOSYAYI SİL BUTONU EKLEME DÜZENİ
                 col_exp, col_dosya_sil = st.columns([8, 2], vertical_alignment="center")
                 
+                # Kart başlığına bağlı dosya simgesi ekleme
+                bagli_icon = "🔗 " if bagli_durumu else ""
+                
                 with col_exp:
-                    exp_container = st.expander(f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} ({len(islemler)} İşlem Adımı)", expanded=False)
+                    exp_container = st.expander(f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} {bagli_icon}({len(islemler)} İşlem Adımı)", expanded=False)
                 
                 with col_dosya_sil:
                     if st.button("🗑️ Dosyayı Sil", key=f"del_dosya_btn_{d_no}_{d_idx}", use_container_width=True, help="Bu dosyayı tüm bilgileriyle sil"):
@@ -136,9 +146,20 @@ with col_left:
                         st.rerun()
 
                 with exp_container:
-                    # --- SIKIŞTIRILMIŞ DOSYA AÇIKLAMASI ALANI ---
-                    st.markdown("**📝 Dosya Açıklaması**")
+                    # --- DOSYA AÇIKLAMASI VE BAĞLI DOSYA KUTUCUĞU ---
+                    col_aciklama_baslik, col_bagli_box = st.columns([3, 1], vertical_alignment="center")
                     
+                    with col_aciklama_baslik:
+                        st.markdown("**📝 Dosya Açıklaması**")
+                    
+                    with col_bagli_box:
+                        yeni_bagli = st.checkbox("🔗 Bağlı Dosya", value=bagli_durumu, key=f"chk_bagli_{d_no}_{d_idx}")
+                        if yeni_bagli != bagli_durumu:
+                            dosya["BagliDosya"] = yeni_bagli
+                            durum_metin = "bağlandı" if yeni_bagli else "bağlantısı kaldırıldı"
+                            verileri_kaydet(kayitlar, f"{d_no} dosyasının bağlı dosya durumu güncellendi ({durum_metin})")
+                            st.rerun()
+
                     if not st.session_state[edit_key]:
                         c_aciklama, c_edit_btn = st.columns([5, 1], vertical_alignment="center")
                         with c_aciklama:
@@ -238,6 +259,7 @@ with col_right:
             dosya_no = st.text_input("Dosya No / Adı (Örn: 2025 D1 5400)", placeholder="Örn: 2025 D1 5400")
             firma = st.text_input("Firma Unvanı", placeholder="Örn: ISIK CELIK SAN.VE TIC.A.S.")
             islem = st.text_area("Açıklama (Tarihsiz Sabit Bilgi)", placeholder="Açıklama metnini girin...", height=80)
+            bagli_durumu_input = st.checkbox("🔗 Bağlı Dosya Olarak Kaydet")
             submit_yeni = st.form_submit_button("📂 Dosya Oluştur / Güncelle", use_container_width=True)
 
             if submit_yeni:
@@ -255,13 +277,15 @@ with col_right:
                             mevcut["Aciklama"] = clean_aciklama
                         if clean_firma != "-" and clean_firma != "":
                             mevcut["Firma"] = clean_firma
-                        verileri_kaydet(kayitlar, f"{clean_dosya} dosyasının açıklaması güncellendi")
+                        mevcut["BagliDosya"] = bagli_durumu_input
+                        verileri_kaydet(kayitlar, f"{clean_dosya} dosyasının bilgileri güncellendi")
                         st.success(f"'{clean_dosya}' dosya bilgileri güncellendi!")
                     else:
                         yeni_dosya = {
                             "Dosya No": clean_dosya,
                             "Firma": clean_firma,
                             "Aciklama": clean_aciklama,
+                            "BagliDosya": bagli_durumu_input,
                             "OlusturmaTarihi": simdi,
                             "Islemler": []
                         }
@@ -311,6 +335,7 @@ with col_right:
                                         "Dosya No": c_dno,
                                         "Firma": c_firma if c_firma else "-",
                                         "Aciklama": c_aciklama,
+                                        "BagliDosya": False,
                                         "OlusturmaTarihi": simdi,
                                         "Islemler": []
                                     })
