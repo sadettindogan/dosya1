@@ -62,6 +62,8 @@ def verileri_getir():
                     item["TescildeBekleyen"] = False
                 if "KapatmaAsamasinda" not in item:
                     item["KapatmaAsamasinda"] = False
+                if "YaziCevabiBekleyen" not in item:
+                    item["YaziCevabiBekleyen"] = False
                 yeni_format_data.append(item)
             return yeni_format_data
         return []
@@ -87,14 +89,15 @@ def verileri_kaydet(yeni_kayitlar, mesaj):
 
 kayitlar = verileri_getir()
 
-# TOPLAM VE DURUM SAYILARI GÖSTERGELERİ
+# TOPLAM VE DURUM SAYILARI GÖSTERGELERİ (6 SÜTUNLU PANORAMA)
 toplam_dosya_sayisi = len(kayitlar)
 bagli_dosya_sayisi = sum(1 for d in kayitlar if d.get("BagliDosya", False))
 kapatma_red_sayisi = sum(1 for d in kayitlar if d.get("KapatmaRed", False))
 tescilde_bekleyen_sayisi = sum(1 for d in kayitlar if d.get("TescildeBekleyen", False))
 kapatma_asamasinda_sayisi = sum(1 for d in kayitlar if d.get("KapatmaAsamasinda", False))
+yazi_cevabi_bekleyen_sayisi = sum(1 for d in kayitlar if d.get("YaziCevabiBekleyen", False))
 
-col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
+col_m1, col_m2, col_m3, col_m4, col_m5, col_m6 = st.columns(6)
 with col_m1:
     st.metric(label="📊 Toplam Dosya", value=f"{toplam_dosya_sayisi}")
 with col_m2:
@@ -105,6 +108,8 @@ with col_m4:
     st.metric(label="⏳ Tescilde Bekleyen", value=f"{tescilde_bekleyen_sayisi}")
 with col_m5:
     st.metric(label="🏁 Kapatma Aşamasında", value=f"{kapatma_asamasinda_sayisi}")
+with col_m6:
+    st.metric(label="✉️ Yazı Cevabı Bekleyen", value=f"{yazi_cevabi_bekleyen_sayisi}")
 
 st.markdown("---")
 
@@ -142,6 +147,7 @@ with col_left:
                 kapatma_red_durumu = dosya.get("KapatmaRed", False)
                 tescilde_durumu = dosya.get("TescildeBekleyen", False)
                 kapatma_asamasinda_durumu = dosya.get("KapatmaAsamasinda", False)
+                yazi_cevabi_durumu = dosya.get("YaziCevabiBekleyen", False)
                 
                 edit_key = f"edit_aciklama_{d_no}_{d_idx}"
                 if edit_key not in st.session_state:
@@ -150,14 +156,15 @@ with col_left:
                 # SAĞ TARAFA DOSYAYI SİL BUTONU EKLEME DÜZENİ
                 col_exp, col_dosya_sil = st.columns([8, 2], vertical_alignment="center")
                 
-                # Kart başlığına simge ekleme
+                # Kart başlığına simgeler ekleme
                 bagli_icon = "🔗 " if bagli_durumu else ""
                 red_icon = "🚫 " if kapatma_red_durumu else ""
                 tescild_icon = "⏳ " if tescilde_durumu else ""
                 kapatma_icon = "🏁 " if kapatma_asamasinda_durumu else ""
+                yazi_icon = "✉️ " if yazi_cevabi_durumu else ""
                 
                 with col_exp:
-                    exp_container = st.expander(f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} {bagli_icon}{red_icon}{tescild_icon}{kapatma_icon}({len(islemler)} İşlem Adımı)", expanded=False)
+                    exp_container = st.expander(f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} {bagli_icon}{red_icon}{tescild_icon}{kapatma_icon}{yazi_icon}({len(islemler)} İşlem Adımı)", expanded=False)
                 
                 with col_dosya_sil:
                     if st.button("🗑️ Dosyayı Sil", key=f"del_dosya_btn_{d_no}_{d_idx}", use_container_width=True, help="Bu dosyayı tüm bilgileriyle sil"):
@@ -167,11 +174,11 @@ with col_left:
                         st.rerun()
 
                 with exp_container:
-                    # --- DOSYA AÇIKLAMASI VE DURUM KUTUCUKLARI (4 KUTU) ---
-                    col_b1, col_b2, col_b3, col_b4 = st.columns(4)
+                    # --- DOSYA AÇIKLAMASI VE DURUM KUTUCUKLARI (5 KUTU) ---
+                    col_b1, col_b2, col_b3, col_b4, col_b5 = st.columns(5)
                     
                     with col_b1:
-                        yeni_bagli = st.checkbox("🔗 Bağlı Dosya", value=bagli_durumu, key=f"chk_bagli_{d_no}_{d_idx}")
+                        yeni_bagli = st.checkbox("🔗 Bağlı", value=bagli_durumu, key=f"chk_bagli_{d_no}_{d_idx}")
                         if yeni_bagli != bagli_durumu:
                             dosya["BagliDosya"] = yeni_bagli
                             verileri_kaydet(kayitlar, f"{d_no} bağlı dosya durumu güncellendi")
@@ -196,6 +203,13 @@ with col_left:
                         if yeni_kapatma != kapatma_asamasinda_durumu:
                             dosya["KapatmaAsamasinda"] = yeni_kapatma
                             verileri_kaydet(kayitlar, f"{d_no} kapatma aşamasında durumu güncellendi")
+                            st.rerun()
+
+                    with col_b5:
+                        yeni_yazi = st.checkbox("✉️ Yazı Cevabı Bekleyen", value=yazi_cevabi_durumu, key=f"chk_yazi_{d_no}_{d_idx}")
+                        if yeni_yazi != yazi_cevabi_durumu:
+                            dosya["YaziCevabiBekleyen"] = yeni_yazi
+                            verileri_kaydet(kayitlar, f"{d_no} yazı cevabı bekleyen durumu güncellendi")
                             st.rerun()
 
                     st.markdown("**📝 Dosya Açıklaması**")
@@ -304,6 +318,7 @@ with col_right:
             with c_in1:
                 bagli_durumu_input = st.checkbox("🔗 Bağlı Dosya")
                 tescilde_durumu_input = st.checkbox("⏳ Tescilde Bekleyen")
+                yazi_cevabi_input = st.checkbox("✉️ Yazı Cevabı Bekleyen")
             with c_in2:
                 kapatma_red_input = st.checkbox("❌ Kapatma Red")
                 kapatma_asamasinda_input = st.checkbox("🏁 Kapatma Aşamasında")
@@ -329,6 +344,7 @@ with col_right:
                         mevcut["KapatmaRed"] = kapatma_red_input
                         mevcut["TescildeBekleyen"] = tescilde_durumu_input
                         mevcut["KapatmaAsamasinda"] = kapatma_asamasinda_input
+                        mevcut["YaziCevabiBekleyen"] = yazi_cevabi_input
                         verileri_kaydet(kayitlar, f"{clean_dosya} dosyasının bilgileri güncellendi")
                         st.success(f"'{clean_dosya}' dosya bilgileri güncellendi!")
                     else:
@@ -340,6 +356,7 @@ with col_right:
                             "KapatmaRed": kapatma_red_input,
                             "TescildeBekleyen": tescilde_durumu_input,
                             "KapatmaAsamasinda": kapatma_asamasinda_input,
+                            "YaziCevabiBekleyen": yazi_cevabi_input,
                             "OlusturmaTarihi": simdi,
                             "Islemler": []
                         }
@@ -393,6 +410,7 @@ with col_right:
                                         "KapatmaRed": False,
                                         "TescildeBekleyen": False,
                                         "KapatmaAsamasinda": False,
+                                        "YaziCevabiBekleyen": False,
                                         "OlusturmaTarihi": simdi,
                                         "Islemler": []
                                     })
