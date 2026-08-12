@@ -102,7 +102,7 @@ with col_left:
                     
                     st.markdown(f"**➕ `{d_no}` Nolu Dosyaya Yeni İşlem Ekle**")
                     
-                    # Giriş kutusu ve butonu yan yana getirmek için sütunlar
+                    # Giriş kutusu ve butonu yan yana
                     with st.form(key=f"add_islem_form_main_{d_no}_{d_idx}", clear_on_submit=True):
                         col_inp, col_btn = st.columns([3, 1])
                         
@@ -131,13 +131,15 @@ with col_left:
                     st.markdown("---")
                     st.markdown("##### 🕒 Geçmiş İşlem Zaman Çizelgesi")
                     
-                    # Geçmiş İşlemler
+                    # GEÇMİŞ İŞLEMLERİ YATAYDA YAN YANA DİZME (Açıklama | Tarih | Sil)
                     for i_idx, item in enumerate(islemler):
-                        c_info, c_del = st.columns([9, 1])
+                        c_text, c_date, c_del = st.columns([6, 3, 1])
                         
-                        with c_info:
+                        with c_text:
                             st.markdown(f"**{i_idx + 1}. Adım:** {item.get('Aciklama')}")
-                            st.caption(f"🗓️ *Tarih / Saat:* {item.get('Tarih')}")
+                        
+                        with c_date:
+                            st.caption(f"🗓️ {item.get('Tarih')}")
                         
                         with c_del:
                             if st.button("🗑️ Sil", key=f"del_main_{d_no}_{i_idx}", help="Bu işlemi sil"):
