@@ -226,8 +226,8 @@
     "KapatmaAsamasinda": false,
     "YaziCevabiBekleyen": false,
     "Incelenmedi": false,
-    "MailAtildi": false,
-    "MailTarihi": ""
+    "MailAtildi": true,
+    "MailTarihi": "12.08.2026"
   },
   {
     "Dosya No": "2023 D1 1011",
