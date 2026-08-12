@@ -84,7 +84,7 @@ with col_left:
     
     search_col, _ = st.columns([1, 2])
     with search_col:
-        arama = st.text_input("🔍 Dosya No veya Firma ile Ara", "", placeholder="Örn: 1001 veya Firma Adı")
+        arama = st.text_input("🔍 Dosya No veya Firma ile Ara", "", placeholder="Örn: 2025 D1 5400 veya Firma Adı")
 
     if kayitlar:
         sirali_dosyalar = sorted(kayitlar, key=lambda x: x.get("OlusturmaTarihi", ""), reverse=True)
@@ -171,13 +171,13 @@ with col_right:
     # 1. TEKLİ DOSYA EKLEME SEKMESİ
     with tab_tekli:
         with st.form("yeni_dosya_formu_sag", clear_on_submit=True):
-            dosya_no = st.text_input("Dosya No / Adı (1.-3. Sütun Bilişimi)", placeholder="Örn: 2026 IST 101")
-            firma = st.text_input("Firma Adı (4. Sütun)", placeholder="Örn: ABC Dış Ticaret A.Ş.")
-            islem = st.text_area("İlk İşlem Açıklaması (5. Sütun)", placeholder="Dosya için başlatılan ilk işlemi girin...", height=80)
+            dosya_no = st.text_input("Dosya No / Adı (Örn: 2025 D1 5400)", placeholder="Örn: 2025 D1 5400")
+            firma = st.text_input("Firma Unvanı", placeholder="Örn: ISIK CELIK SAN.VE TIC.A.S.")
+            islem = st.text_area("İşlem Açıklaması", placeholder="Açıklama metnini girin...", height=80)
             submit_yeni = st.form_submit_button("📂 Dosya Oluştur", use_container_width=True)
 
             if submit_yeni:
-                if dosya_no.strip() != "" and islem.strip() != "":
+                if dosya_no.strip() != "":
                     clean_dosya = dosya_no.strip()
                     clean_firma = firma.strip() if firma.strip() != "" else "-"
                     turkey_tz = pytz.timezone("Europe/Istanbul")
@@ -186,13 +186,16 @@ with col_right:
                     mevcut = next((d for d in kayitlar if str(d.get("Dosya No")) == clean_dosya), None)
                     
                     if mevcut:
-                        islem_no = len(mevcut["Islemler"]) + 1
-                        mevcut["Islemler"].append({
-                            "Aciklama": islem.strip(),
-                            "Tarih": simdi
-                        })
-                        verileri_kaydet(kayitlar, f"{clean_dosya} dosyasına {islem_no}. işlem eklendi")
-                        st.success(f"'{clean_dosya}' dosyasına yeni işlem eklendi!")
+                        if islem.strip() != "":
+                            islem_no = len(mevcut["Islemler"]) + 1
+                            mevcut["Islemler"].append({
+                                "Aciklama": islem.strip(),
+                                "Tarih": simdi
+                            })
+                            verileri_kaydet(kayitlar, f"{clean_dosya} dosyasına {islem_no}. işlem eklendi")
+                            st.success(f"'{clean_dosya}' dosyasına yeni işlem eklendi!")
+                        else:
+                            st.warning("Var olan dosyaya eklenecek işlem açıklamasını giriniz.")
                     else:
                         yeni_dosya = {
                             "Dosya No": clean_dosya,
@@ -203,22 +206,22 @@ with col_right:
                                     "Aciklama": islem.strip(),
                                     "Tarih": simdi
                                 }
-                            ]
+                            ] if islem.strip() != "" else []
                         }
                         kayitlar.append(yeni_dosya)
                         verileri_kaydet(kayitlar, f"Yeni dosya eklendi: {clean_dosya}")
                         st.success(f"'{clean_dosya}' nolu dosya başarıyla oluşturuldu!")
                     st.rerun()
                 else:
-                    st.warning("Lütfen Dosya No ve Açıklama alanlarını doldurun.")
+                    st.warning("Lütfen Dosya No alanını doldurun.")
 
     # 2. EXCEL'DEN TOPLU VERİ YAPIŞTIRMA SEKMESİ
     with tab_excel:
         st.caption("Excel'deki **5 Sütunluk** veriyi buraya yapıştırabilirsiniz:")
-        st.caption("`1.Parça` | `2.Parça` | `3.Parça` | `Firma Adı` | `Açıklama`")
+        st.caption("`DIIBNO1` | `DIIBNO2` | `DIIBNO3` | `Firma Unvanı` | `Açıklama`")
         
         with st.form("excel_paste_form", clear_on_submit=True):
-            pasted_data = st.text_area("Excel Verisini Yapıştırın", placeholder="2026\tIST\t101\tABC Lojistik\tAçıklama metni", height=120)
+            pasted_data = st.text_area("Excel Verisini Yapıştırın", placeholder="2025\tD1\t5400\tISIK CELIK SAN.VE TIC.A.S.\tIncelenmedi.", height=120)
             submit_excel = st.form_submit_button("⚡ Toplu Verileri Kaydet", use_container_width=True)
             
             if submit_excel:
@@ -229,23 +232,24 @@ with col_right:
                     lines = pasted_data.strip().split("\n")
                     for line in lines:
                         parts = line.split("\t")
-                        if len(parts) >= 5:
+                        if len(parts) >= 4:
                             sutun1 = parts[0].strip()
                             sutun2 = parts[1].strip()
                             sutun3 = parts[2].strip()
                             c_firma = parts[3].strip()
-                            c_islem = parts[4].strip()
+                            c_islem = parts[4].strip() if len(parts) >= 5 else ""
                             
                             c_dno = " ".join(filter(None, [sutun1, sutun2, sutun3]))
                             simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
                             
-                            if c_dno and c_islem:
+                            if c_dno:
                                 mevcut = next((d for d in kayitlar if str(d.get("Dosya No")) == c_dno), None)
                                 if mevcut:
-                                    mevcut["Islemler"].append({
-                                        "Aciklama": c_islem,
-                                        "Tarih": simdi
-                                    })
+                                    if c_islem:
+                                        mevcut["Islemler"].append({
+                                            "Aciklama": c_islem,
+                                            "Tarih": simdi
+                                        })
                                     if c_firma and mevcut.get("Firma") in ["-", ""]:
                                         mevcut["Firma"] = c_firma
                                 else:
@@ -256,52 +260,59 @@ with col_right:
                                         "Islemler": [{
                                             "Aciklama": c_islem,
                                             "Tarih": simdi
-                                        }]
+                                        }] if c_islem else []
                                     })
                                 eklenen_sayi += 1
                                 
                     if eklenen_sayi > 0:
                         verileri_kaydet(kayitlar, f"Excel'den {eklenen_sayi} adet kayıt eklendi")
-                        st.success(f"Toplam {eklenen_sayi} adet dosya/işlem kaydı işlendi!")
+                        st.success(f"Toplam {eklenen_sayi} adet dosya kaydı işlendi!")
                         st.rerun()
                     else:
-                        st.warning("Geçerli formatta veri bulunamadı. Lütfen en az 5 sütun seçtiğinizden emin olun.")
+                        st.warning("Geçerli formatta veri bulunamadı.")
                 else:
                     st.warning("Yapıştırılan alan boş olamaz.")
 
-    # 3. VERİ ÇIKIŞI VE RAPOR OLUŞTURMA SEKMESİ
+    # 3. EXCEL BİREBİR UYUMLU RAPOR OLUŞTURMA SEKMESİ
     with tab_rapor:
-        st.caption("Tüm dosya verilerini ve adım adımlarını metin çıktısı olarak kopyalayabilirsiniz.")
+        st.caption("Excel tablonuzla birebir aynı formatta (5 Sütunlu) rapor oluşturur.")
         
-        if st.button("📝 Rapor Oluştur", use_container_width=True):
+        if st.button("📊 Rapor Oluştur", use_container_width=True):
             if kayitlar:
-                rapor_metni = ""
-                sirali_kayitlar = sorted(kayitlar, key=lambda x: x.get("OlusturmaTarihi", ""), reverse=True)
+                # Excel Başlık Satırı (A, B, C, D, E Sütunları)
+                rapor_metni = "DIIBNO1\tDIIBNO2\tDIIBNO3\tFirma Unvanı\tAçıklama\n"
                 
-                for dosya in sirali_kayitlar:
-                    d_no = dosya.get("Dosya No")
-                    firma = dosya.get("Firma", "-")
+                for dosya in kayitlar:
+                    d_no = dosya.get("Dosya No", "")
+                    firma = dosya.get("Firma", "")
                     islemler = dosya.get("Islemler", [])
                     
-                    rapor_metni += f"📂 DOSYA NO: {d_no}\n"
-                    rapor_metni += f"🏢 FİRMA: {firma}\n"
-                    rapor_metni += f"İşlem Adımları:\n"
+                    # Dosya numarasını boşluklara göre 3 parçaya böl
+                    parcalar = d_no.split(" ")
+                    d1 = parcalar[0] if len(parcalar) > 0 else ""
+                    d2 = parcalar[1] if len(parcalar) > 1 else ""
+                    d3 = " ".join(parcalar[2:]) if len(parcalar) > 2 else ""
                     
-                    for idx, item in enumerate(islemler):
-                        rapor_metni += f"  {idx + 1}. Adım: {item.get('Aciklama')} ({item.get('Tarih')})\n"
+                    # Açıklamaları hazırlama
+                    if len(islemler) == 0:
+                        aciklama_metni = ""
+                    elif len(islemler) == 1:
+                        aciklama_metni = islemler[0].get("Aciklama", "")
+                    else:
+                        aciklama_metni = " | ".join([item.get('Aciklama') for item in islemler if item.get('Aciklama')])
                     
-                    rapor_metni += "-" * 40 + "\n\n"
+                    # Satırı Tab ile ayırarak ekle
+                    rapor_metni += f"{d1}\t{d2}\t{d3}\t{firma}\t{aciklama_metni}\n"
                 
                 st.session_state["rapor_cikti"] = rapor_metni
             else:
                 st.info("Raporlanacak kayıtlı dosya bulunmuyor.")
 
-        # Eğer oluşturulmuş rapor varsa kopyalanabilir alan olarak göster
         if "rapor_cikti" in st.session_state and st.session_state["rapor_cikti"]:
-            st.markdown("**Oluşturulan Rapor Metni:**")
-            st.caption("💡 Kutunun sağ üst köşesindeki **Kopyala** simgesine tıklayarak tüm raporu kopyalayabilirsiniz.")
+            st.markdown("**Excel Tablo Çıktısı:**")
+            st.caption("📋 Sağ üstteki **Kopyala** simgesine tıklayıp Excel sayfanıza doğrudan `Ctrl + V` ile yapıştırabilirsiniz.")
             st.code(st.session_state["rapor_cikti"], language="text")
 
     st.divider()
     st.markdown("##### 💡 Kullanım İpuçları")
-    st.caption("• **Rapor Oluştur** sekmesi tüm dosyalarınızı adımlarıyla birlikte kopyalanabilir metin formatına getirir.")
+    st.caption("• Oluşturulan rapor metni Tab (`\\t`) karakteri ile ayrıştırıldığı için Excel hücrelerini kaydırmadan tam oturur.")
