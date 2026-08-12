@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 import json
 import pytz
+import io
 from github import Github
 
 # Sayfa Yapılandırması (Geniş Ekran)
@@ -72,8 +73,8 @@ def verileri_kaydet(yeni_kayitlar, mesaj):
 
 kayitlar = verileri_getir()
 
-# EKRAN YAPILANDIRMASI: Sol Taraf %68, Sağ Taraf %32
-col_left, col_right = st.columns([68, 32], gap="large")
+# EKRAN YAPILANDIRMASI: Sol Taraf %65, Sağ Taraf %35
+col_left, col_right = st.columns([65, 35], gap="large")
 
 # ==============================================================================
 # SOL TARAF: GENİŞ DOSYA LİSTESİ VE GEÇMİŞ İŞLEMLER
@@ -102,7 +103,6 @@ with col_left:
                     
                     st.markdown(f"**➕ `{d_no}` Nolu Dosyaya Yeni İşlem Ekle**")
                     
-                    # Giriş kutusu ve butonu yan yana
                     with st.form(key=f"add_islem_form_main_{d_no}_{d_idx}", clear_on_submit=True):
                         col_inp, col_btn = st.columns([3, 1], vertical_alignment="center")
                         
@@ -131,7 +131,6 @@ with col_left:
                     st.markdown("---")
                     st.markdown("##### 🕒 Dosyada bugüne kadar yapılan işlemler")
                     
-                    # SIKIŞTIRILMIŞ VE HİZALANMIŞ İŞLEM SATIRLARI
                     for i_idx, item in enumerate(islemler):
                         c_text, c_date, c_del = st.columns([5, 3, 1], vertical_alignment="center")
                         
@@ -151,52 +150,115 @@ with col_left:
                                 verileri_kaydet(kayitlar, f"{d_no} dosyasından işlem silindi")
                                 st.success("Silindi!")
                                 st.rerun()
-                st.write("") # Boşluk
+                st.write("") 
         else:
             st.info("Arama kriterinize uygun dosya bulunamadı.")
     else:
-        st.info("Sistemde henüz kayıtlı dosya bulunmuyor. Sağ taraftaki panelden yeni dosya oluşturabilirsiniz.")
+        st.info("Sistemde henüz kayıtlı dosya bulunmuyor.")
 
 # ==============================================================================
-# SAĞ TARAF: YENİ DOSYA OLUŞTURMA PANELİ
+# SAĞ TARAF: YENİ DOSYA VEYA TOPLU EXCEL VERİ GİRİŞİ PANELİ
 # ==============================================================================
 with col_right:
-    st.subheader("📌 Yeni Dosya Tanımla")
+    st.subheader("📌 Veri Girişi & Yeni Dosya")
     
-    with st.form("yeni_dosya_formu_sag", clear_on_submit=True):
-        dosya_no = st.text_input("Dosya No", placeholder="Örn: 2026-101")
-        islem = st.text_area("İlk İşlem Açıklaması", placeholder="Dosya için başlatılan ilk işlemi girin...", height=100)
-        submit_yeni = st.form_submit_button("📂 Yeni Dosya Oluştur", use_container_width=True)
-
-        if submit_yeni:
-            if dosya_no.strip() != "" and islem.strip() != "":
-                clean_dosya = dosya_no.strip()
-                turkey_tz = pytz.timezone("Europe/Istanbul")
-                simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
-
-                mevcut = any(str(d.get("Dosya No")) == clean_dosya for d in kayitlar)
+    tab_tekli, tab_excel = st.tabs(["✏️ Tekli Dosya Ekle", "📋 Excel'den Toplu Yapıştır"])
+    
+    # 1. TEKLİ DOSYA EKLEME SEKMESİ
+    with tab_tekli:
+        with st.form("yeni_dosya_formu_sag", clear_on_submit=True):
+            col_dno, col_btn_tek = st.columns([2, 1], vertical_alignment="bottom")
+            with col_dno:
+                dosya_no = st.text_input("Dosya No", placeholder="Örn: 2026-101")
+            with col_btn_tek:
+                submit_yeni = st.form_submit_button("📂 Dosya Oluştur", use_container_width=True)
                 
-                if mevcut:
-                    st.warning(f"⚠️ '{clean_dosya}' nolu dosya zaten var. Sol taraftaki arama çubuğunu kullanarak dosyayı bulabilir ve yeni işlem ekleyebilirsiniz.")
-                else:
-                    yeni_dosya = {
-                        "Dosya No": clean_dosya,
-                        "OlusturmaTarihi": simdi,
-                        "Islemler": [
-                            {
-                                "Aciklama": islem.strip(),
-                                "Tarih": simdi
-                            }
-                        ]
-                    }
-                    kayitlar.append(yeni_dosya)
-                    verileri_kaydet(kayitlar, f"Yeni dosya eklendi: {clean_dosya}")
-                    st.success(f"'{clean_dosya}' nolu dosya başarıyla oluşturuldu!")
+            islem = st.text_area("İlk İşlem Açıklaması", placeholder="Dosya için başlatılan ilk işlemi girin...", height=80)
+
+            if submit_yeni:
+                if dosya_no.strip() != "" and islem.strip() != "":
+                    clean_dosya = dosya_no.strip()
+                    turkey_tz = pytz.timezone("Europe/Istanbul")
+                    simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
+
+                    mevcut = next((d for d in kayitlar if str(d.get("Dosya No")) == clean_dosya), None)
+                    
+                    if mevcut:
+                        islem_no = len(mevcut["Islemler"]) + 1
+                        mevcut["Islemler"].append({
+                            "Aciklama": islem.strip(),
+                            "Tarih": simdi
+                        })
+                        verileri_kaydet(kayitlar, f"{clean_dosya} dosyasına {islem_no}. işlem eklendi")
+                        st.success(f"'{clean_dosya}' dosyasına yeni işlem eklendi!")
+                    else:
+                        yeni_dosya = {
+                            "Dosya No": clean_dosya,
+                            "OlusturmaTarihi": simdi,
+                            "Islemler": [
+                                {
+                                    "Aciklama": islem.strip(),
+                                    "Tarih": simdi
+                                }
+                            ]
+                        }
+                        kayitlar.append(yeni_dosya)
+                        verileri_kaydet(kayitlar, f"Yeni dosya eklendi: {clean_dosya}")
+                        st.success(f"'{clean_dosya}' nolu dosya başarıyla oluşturuldu!")
                     st.rerun()
-            else:
-                st.warning("Lütfen hem Dosya No hem de ilk işlem alanını doldurun.")
+                else:
+                    st.warning("Lütfen hem Dosya No hem de işlem açıklamasını girin.")
+
+    # 2. EXCEL'DEN TOPLU VERİ YAPIŞTIRMA SEKMESİ
+    with tab_excel:
+        st.caption("Excel'de seçtiğiniz **2 Sütunu (1.Sütun: Dosya No | 2.Sütun: Açıklama)** kopyalayıp aşağıdaki kutuya yapıştırın:")
+        
+        with st.form("excel_paste_form", clear_on_submit=True):
+            pasted_data = st.text_area("Excel Verisini Buraya Yapıştırın", placeholder="1001\tAçıklama 1\n1002\tAçıklama 2", height=120)
+            submit_excel = st.form_submit_button("⚡ Toplu Verileri Kaydet", use_container_width=True)
+            
+            if submit_excel:
+                if pasted_data.strip() != "":
+                    turkey_tz = pytz.timezone("Europe/Istanbul")
+                    eklenen_sayi = 0
+                    
+                    # Satır satır okuma
+                    lines = pasted_data.strip().split("\n")
+                    for line in lines:
+                        parts = line.split("\t")
+                        if len(parts) >= 2:
+                            c_dno = parts[0].strip()
+                            c_islem = parts[1].strip()
+                            simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
+                            
+                            if c_dno and c_islem:
+                                mevcut = next((d for d in kayitlar if str(d.get("Dosya No")) == c_dno), None)
+                                if mevcut:
+                                    mevcut["Islemler"].append({
+                                        "Aciklama": c_islem,
+                                        "Tarih": simdi
+                                    })
+                                else:
+                                    kayitlar.append({
+                                        "Dosya No": c_dno,
+                                        "OlusturmaTarihi": simdi,
+                                        "Islemler": [{
+                                            "Aciklama": c_islem,
+                                            "Tarih": simdi
+                                        }]
+                                    })
+                                eklenen_sayi += 1
+                                
+                    if eklenen_sayi > 0:
+                        verileri_kaydet(kayitlar, f"Excel'den {eklenen_sayi} adet kayıt eklendi")
+                        st.success(f"Toplam {eklenen_sayi} adet dosya/işlem kaydı işlendi!")
+                        st.rerun()
+                    else:
+                        st.warning("Geçerli formatta veri bulunamadı. 2 sütun kopyaladığınızdan emin olun.")
+                else:
+                    st.warning("Yapıştırılan alan boş olamaz.")
 
     st.divider()
     st.markdown("##### 💡 Kullanım İpuçları")
-    st.caption("• Mükerrer kayıt engellemek için sistem dosya numaralarını otomatik kontrol eder.")
-    st.caption("• Dosya üzerindeki herhangi bir işlem adımını sildiğinizde değişiklik anında GitHub veritabanına yansır.")
+    st.caption("• Tekli girişte Dosya No daha önceden varsa otomatik yeni işlem adımı olarak altına eklenir.")
+    st.caption("• Excel yapıştırma özelliğinde başlık satırı dahil etmeden kopyalama yapabilirsiniz.")
