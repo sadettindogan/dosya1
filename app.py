@@ -161,12 +161,12 @@ with col_left:
         st.info("Sistemde henüz kayıtlı dosya bulunmuyor.")
 
 # ==============================================================================
-# SAĞ TARAF: YENİ DOSYA VEYA TOPLU EXCEL VERİ GİRİŞİ PANELİ
+# SAĞ TARAF: VERİ GİRİŞİ, TOPLU İŞLEM VE RAPORLAMA PANELİ
 # ==============================================================================
 with col_right:
-    st.subheader("📌 Veri Girişi & Yeni Dosya")
+    st.subheader("📌 İşlem Paneli")
     
-    tab_tekli, tab_excel = st.tabs(["✏️ Tekli Dosya Ekle", "📋 Excel'den Toplu Yapıştır"])
+    tab_tekli, tab_excel, tab_rapor = st.tabs(["✏️ Tekli Ekle", "📋 Toplu Yapıştır", "📊 Rapor Oluştur"])
     
     # 1. TEKLİ DOSYA EKLEME SEKMESİ
     with tab_tekli:
@@ -212,13 +212,13 @@ with col_right:
                 else:
                     st.warning("Lütfen Dosya No ve Açıklama alanlarını doldurun.")
 
-    # 2. EXCEL'DEN TOPLU VERİ YAPIŞTIRMA SEKMESİ (5 SÜTUNLU YAPININ İŞLENMESİ)
+    # 2. EXCEL'DEN TOPLU VERİ YAPIŞTIRMA SEKMESİ
     with tab_excel:
-        st.caption("Excel'de seçtiğiniz **5 Sütunu** kopyalayıp aşağıdaki kutuya yapıştırın:")
-        st.caption("📌 **Sütun Düzeyi:** `1.Parça` | `2.Parça` | `3.Parça` | `Firma Adı` | `Açıklama`")
+        st.caption("Excel'deki **5 Sütunluk** veriyi buraya yapıştırabilirsiniz:")
+        st.caption("`1.Parça` | `2.Parça` | `3.Parça` | `Firma Adı` | `Açıklama`")
         
         with st.form("excel_paste_form", clear_on_submit=True):
-            pasted_data = st.text_area("Excel Verisini Buraya Yapıştırın", placeholder="2026\tIST\t101\tABC Lojistik\tAçıklama metni", height=120)
+            pasted_data = st.text_area("Excel Verisini Yapıştırın", placeholder="2026\tIST\t101\tABC Lojistik\tAçıklama metni", height=120)
             submit_excel = st.form_submit_button("⚡ Toplu Verileri Kaydet", use_container_width=True)
             
             if submit_excel:
@@ -229,7 +229,6 @@ with col_right:
                     lines = pasted_data.strip().split("\n")
                     for line in lines:
                         parts = line.split("\t")
-                        # 5 Sütunluk yapının ayrıştırılması
                         if len(parts) >= 5:
                             sutun1 = parts[0].strip()
                             sutun2 = parts[1].strip()
@@ -237,7 +236,6 @@ with col_right:
                             c_firma = parts[3].strip()
                             c_islem = parts[4].strip()
                             
-                            # İlk 3 sütunu arada boşluk olacak şekilde birleştirme
                             c_dno = " ".join(filter(None, [sutun1, sutun2, sutun3]))
                             simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
                             
@@ -248,7 +246,6 @@ with col_right:
                                         "Aciklama": c_islem,
                                         "Tarih": simdi
                                     })
-                                    # Firma boşsa güncelle
                                     if c_firma and mevcut.get("Firma") in ["-", ""]:
                                         mevcut["Firma"] = c_firma
                                 else:
@@ -268,11 +265,43 @@ with col_right:
                         st.success(f"Toplam {eklenen_sayi} adet dosya/işlem kaydı işlendi!")
                         st.rerun()
                     else:
-                        st.warning("Geçerli formatta veri bulunamadı. Lütfen en az 5 sütun seçip kopyaladığınızdan emin olun.")
+                        st.warning("Geçerli formatta veri bulunamadı. Lütfen en az 5 sütun seçtiğinizden emin olun.")
                 else:
                     st.warning("Yapıştırılan alan boş olamaz.")
 
+    # 3. VERİ ÇIKIŞI VE RAPOR OLUŞTURMA SEKMESİ
+    with tab_rapor:
+        st.caption("Tüm dosya verilerini ve adım adımlarını metin çıktısı olarak kopyalayabilirsiniz.")
+        
+        if st.button("📝 Rapor Oluştur", use_container_width=True):
+            if kayitlar:
+                rapor_metni = ""
+                sirali_kayitlar = sorted(kayitlar, key=lambda x: x.get("OlusturmaTarihi", ""), reverse=True)
+                
+                for dosya in sirali_kayitlar:
+                    d_no = dosya.get("Dosya No")
+                    firma = dosya.get("Firma", "-")
+                    islemler = dosya.get("Islemler", [])
+                    
+                    rapor_metni += f"📂 DOSYA NO: {d_no}\n"
+                    rapor_metni += f"🏢 FİRMA: {firma}\n"
+                    rapor_metni += f"İşlem Adımları:\n"
+                    
+                    for idx, item in enumerate(islemler):
+                        rapor_metni += f"  {idx + 1}. Adım: {item.get('Aciklama')} ({item.get('Tarih')})\n"
+                    
+                    rapor_metni += "-" * 40 + "\n\n"
+                
+                st.session_state["rapor_cikti"] = rapor_metni
+            else:
+                st.info("Raporlanacak kayıtlı dosya bulunmuyor.")
+
+        # Eğer oluşturulmuş rapor varsa kopyalanabilir alan olarak göster
+        if "rapor_cikti" in st.session_state and st.session_state["rapor_cikti"]:
+            st.markdown("**Oluşturulan Rapor Metni:**")
+            st.caption("💡 Kutunun sağ üst köşesindeki **Kopyala** simgesine tıklayarak tüm raporu kopyalayabilirsiniz.")
+            st.code(st.session_state["rapor_cikti"], language="text")
+
     st.divider()
     st.markdown("##### 💡 Kullanım İpuçları")
-    st.caption("• Excel yapıştırmada ilk 3 sütun otomatikleştirilerek tek bir dosya adına dönüştürülür.")
-    st.caption("• Aynı dosya numarasıyla denk gelen satırlarda yeni işlem adımı otomatik alt alta dizilir.")
+    st.caption("• **Rapor Oluştur** sekmesi tüm dosyalarınızı adımlarıyla birlikte kopyalanabilir metin formatına getirir.")
