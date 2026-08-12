@@ -22,7 +22,31 @@ def verileri_getir():
     try:
         file_content = repo.get_contents(FILE_PATH)
         data = json.loads(file_content.decoded_content.decode('utf-8'))
-        return data
+        
+        # Eski liste formatındaki kayıtları otomatik yeni dosya formatına dönüştürme
+        yeni_format_data = []
+        if isinstance(data, list):
+            for item in data:
+                # Eğer veri eski basitleştirilmiş yapıdaysa
+                if "Islemler" not in item and "Dosya No" in item:
+                    d_no = str(item.get("Dosya No"))
+                    tarih = item.get("Tarih", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                    islem_text = item.get("Yapılan İşlem", "Kayıt detay yok")
+                    
+                    # Var olan dosyaya mı eklenecek kontrolü
+                    mevcut = next((x for x in yeni_format_data if x["Dosya No"] == d_no), None)
+                    if mevcut:
+                        mevcut["Islemler"].append({"Aciklama": islem_text, "Tarih": tarih})
+                    else:
+                        yeni_format_data.append({
+                            "Dosya No": d_no,
+                            "OlusturmaTarihi": tarih,
+                            "Islemler": [{"Aciklama": islem_text, "Tarih": tarih}]
+                        })
+                else:
+                    yeni_format_data.append(item)
+            return yeni_format_data
+        return []
     except Exception:
         return []
 
@@ -63,7 +87,7 @@ with st.form("yeni_dosya_formu", clear_on_submit=True):
             mevcut = any(str(d.get("Dosya No")) == clean_dosya for d in kayitlar)
             
             if mevcut:
-                st.warning(f"'{clean_dosya}' numaralı dosya zaten mevcut. Lütfen aşağıdaki listeden dosya kartını açarak yeni işlem ekleyin.")
+                st.warning(f"'{clean_dosya}' numaralı dosya zaten mevcut. Aşağıdaki listeden dosya kartını açarak yeni işlem ekleyebilirsiniz.")
             else:
                 yeni_dosya = {
                     "Dosya No": clean_dosya,
@@ -89,7 +113,6 @@ st.subheader("📋 Kayıtlı Dosyalar")
 arama = st.text_input("Dosya No ile Arama Yap", "")
 
 if kayitlar:
-    # Dosyaları en son işlem görene göre sırala
     sirali_dosyalar = sorted(kayitlar, key=lambda x: x.get("OlusturmaTarihi", ""), reverse=True)
     
     if arama:
@@ -102,10 +125,9 @@ if kayitlar:
             d_no = dosya.get("Dosya No")
             islemler = dosya.get("Islemler", [])
             
-            # Dosya üzerine tıklanınca açılan kart
             with st.expander(f"📁 **Dosya No: {d_no}** (Toplam {len(islemler)} İşlem)", expanded=False):
                 
-                # --- DOSYA İÇİ YENİ İŞLEM EKLEME FORMU ---
+                # Dosya içi işlem ekleme formu
                 with st.form(key=f"add_islem_form_{d_no}_{d_idx}", clear_on_submit=True):
                     yeni_islem_text = st.text_input("Bu dosyaya yeni kayıt ekle")
                     submit_islem = st.form_submit_button("➕ Kayıt Ekle")
@@ -129,7 +151,6 @@ if kayitlar:
                 st.markdown("---")
                 st.markdown("**Yapılan Geçmiş Kayıtlar:**")
                 
-                # --- KAYITLARIN LİSTELENMESİ VE SİLME ---
                 for i_idx, item in enumerate(islemler):
                     col_info, col_del = st.columns([6, 1])
                     
@@ -141,7 +162,6 @@ if kayitlar:
                         if st.button("🗑️ Sil", key=f"del_{d_no}_{i_idx}"):
                             islemler.pop(i_idx)
                             
-                            # Eğer dosyadaki tüm işlemler silinirse dosyayı tamamen sil
                             if len(islemler) == 0:
                                 kayitlar.remove(dosya)
                                 
