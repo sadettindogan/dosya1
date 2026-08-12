@@ -76,7 +76,7 @@ with st.form("kayit_formu", clear_on_submit=True):
         if dosya_no.strip() != "" and islem.strip() != "":
             turkey_tz = pytz.timezone("Europe/Istanbul")
             simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
-             clean_dosya = dosya_no.strip()
+            clean_dosya = dosya_no.strip()
 
             if st.session_state.editing_target:
                 # DÜZENLEME MODU: Mevcut adımı güncelle
