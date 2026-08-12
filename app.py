@@ -104,7 +104,7 @@ with col_left:
                     
                     # Giriş kutusu ve butonu yan yana
                     with st.form(key=f"add_islem_form_main_{d_no}_{d_idx}", clear_on_submit=True):
-                        col_inp, col_btn = st.columns([3, 1])
+                        col_inp, col_btn = st.columns([3, 1], vertical_alignment="center")
                         
                         with col_inp:
                             yeni_islem_text = st.text_input("İşlem Açıklaması", key=f"inp_{d_no}_{d_idx}", placeholder="Yapılan işlemi yazınız...", label_visibility="collapsed")
@@ -131,9 +131,9 @@ with col_left:
                     st.markdown("---")
                     st.markdown("##### 🕒 Geçmiş İşlem Zaman Çizelgesi")
                     
-                    # GEÇMİŞ İŞLEMLERİ YATAYDA YAN YANA DİZME (Açıklama | Tarih | Sil)
+                    # SIKIŞTIRILMIŞ VE HİZALANMIŞ İŞLEM SATIRLARI
                     for i_idx, item in enumerate(islemler):
-                        c_text, c_date, c_del = st.columns([6, 3, 1])
+                        c_text, c_date, c_del = st.columns([5, 3, 1], vertical_alignment="center")
                         
                         with c_text:
                             st.markdown(f"**{i_idx + 1}. Adım:** {item.get('Aciklama')}")
@@ -151,9 +151,6 @@ with col_left:
                                 verileri_kaydet(kayitlar, f"{d_no} dosyasından işlem silindi")
                                 st.success("Silindi!")
                                 st.rerun()
-                        
-                        if i_idx < len(islemler) - 1:
-                            st.divider()
                 st.write("") # Boşluk
         else:
             st.info("Arama kriterinize uygun dosya bulunamadı.")
