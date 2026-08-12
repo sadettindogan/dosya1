@@ -28,13 +28,6 @@ st.markdown("""
         margin-top: 0.4rem !important;
         margin-bottom: 0.4rem !important;
     }
-    /* Dosya başlıklarındaki simgelerin boyutunu büyütme */
-    .status-badge {
-        font-size: 1.25rem !important;
-        font-weight: bold;
-        vertical-align: middle;
-        margin-right: 4px;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -178,7 +171,7 @@ with col_left:
                 if confirm_del_key not in st.session_state:
                     st.session_state[confirm_del_key] = False
 
-                # BÜYÜK SEMBOLLERLE DOSYA BAŞLIĞI OLUŞTURMA
+                # TEMİZ DURUM SİMGELERİ
                 simgeler = ""
                 if bagli_durumu: simgeler += "🔗 "
                 if kapatma_red_durumu: simgeler += "🚫 "
@@ -197,7 +190,7 @@ with col_left:
                 col_exp, col_dosya_sil = st.columns([92, 8], vertical_alignment="center")
                 
                 with col_exp:
-                    exp_header = f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} <span class='status-badge'>{simgeler}</span>({len(islemler)} İşlem){mail_baslik_eki}"
+                    exp_header = f"📂 **Dosya No:** {d_no} | 🏢 **Firma:** {firma} {simgeler}({len(islemler)} İşlem){mail_baslik_eki}"
                     exp_container = st.expander(exp_header, expanded=False)
                 
                 # KÜÇÜK SİL BUTONU VE EMİN MİSİNİZ ONAYI
