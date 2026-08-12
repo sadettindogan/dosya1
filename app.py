@@ -7,13 +7,13 @@ from github import Github
 
 # Sayfa Yapılandırması (Geniş Ekran)
 st.set_page_config(
-    page_title="Dosya Takip Portalı", 
+    page_title="Dosya Takibi", 
     page_icon="📁",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-st.title("📁 Dosya İşlem ve Takip Portalı")
+st.title("📁 Dosya Takibi")
 st.markdown("---")
 
 # --- GITHUB BAĞLANTISI VE VERİ OKUMA ---
@@ -129,7 +129,7 @@ with col_left:
                                 st.warning("Açıklama boş olamaz.")
 
                     st.markdown("---")
-                    st.markdown("##### 🕒 Geçmiş İşlem Zaman Çizelgesi")
+                    st.markdown("##### 🕒 Dosyada bugüne kadar yapılan işlemler")
                     
                     # SIKIŞTIRILMIŞ VE HİZALANMIŞ İŞLEM SATIRLARI
                     for i_idx, item in enumerate(islemler):
