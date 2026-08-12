@@ -43,7 +43,11 @@ with st.form("kayit_formu", clear_on_submit=True):
     if submit:
         if dosya_no.strip() != "" and islem.strip() != "":
             # Otomatik Tarih alma
-            simdi = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+import pytz
+
+# Türkiye saat dilimini tanımlama (UTC+3)
+turkey_tz = pytz.timezone("Europe/Istanbul")
+simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
             
             yeni_kayit = {
                 "Tarih": simdi,
