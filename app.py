@@ -2,13 +2,15 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import json
+import pytz
 from github import Github
 
+# Sayfa Yapılandırması
 st.set_page_config(page_title="Dosya Takip Sistemi", layout="centered")
 
 st.title("📁 Dosya İşlem Kayıt Sistemi")
 
-# --- GITHUB BAGLANTISI VE VERİ OKUMA ---
+# --- GITHUB BAĞLANTISI VE VERİ OKUMA ---
 GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
 REPO_NAME = st.secrets["REPO_NAME"]
 FILE_PATH = st.secrets["FILE_PATH"]
@@ -21,12 +23,12 @@ def verileri_getir():
         file_content = repo.get_contents(FILE_PATH)
         data = json.loads(file_content.decoded_content.decode('utf-8'))
         return data, file_content.sha
-    except Exception as e:
+    except Exception:
         return [], None
 
 kayitlar, file_sha = verileri_getir()
 
-# DataFrame oluşturma
+# DataFrame Oluşturma
 if kayitlar:
     df = pd.DataFrame(kayitlar)
 else:
@@ -42,12 +44,9 @@ with st.form("kayit_formu", clear_on_submit=True):
 
     if submit:
         if dosya_no.strip() != "" and islem.strip() != "":
-            # Otomatik Tarih alma
-import pytz
-
-# Türkiye saat dilimini tanımlama (UTC+3)
-turkey_tz = pytz.timezone("Europe/Istanbul")
-simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
+            # Türkiye Saat Dilimine (UTC+3) Göre Otomatik Tarih ve Saat Alımı
+            turkey_tz = pytz.timezone("Europe/Istanbul")
+            simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
             
             yeni_kayit = {
                 "Tarih": simdi,
@@ -58,7 +57,7 @@ simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
             kayitlar.append(yeni_kayit)
             yeni_json_icerik = json.dumps(kayitlar, ensure_ascii=False, indent=2)
             
-            # GitHub üzerindeki dosyayı güncelleme (Commit)
+            # GitHub Üzerindeki Dosyayı Güncelleme (Commit)
             if file_sha:
                 repo.update_file(
                     path=FILE_PATH,
@@ -73,7 +72,7 @@ simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
                     content=yeni_json_icerik
                 )
             
-            st.success(f"'{dosya_no}' numaralı dosya işlemi başarıyla GitHub'a kaydedildi!")
+            st.success(f"'{dosya_no}' numaralı dosya işlemi başarıyla kaydedildi!")
             st.rerun()
         else:
             st.warning("Lütfen tüm alanları doldurun.")
