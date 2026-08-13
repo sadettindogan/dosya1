@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Ultra Sıkılaştırılmış CSS, Sanatsal Mavi Kaydırma Tuşları ve İnce Durum Kaydet Butonu
+# Kesin CSS Düzeltmeleri: Kaydırma Butonları ile Normal Butonları Ayırma
 st.markdown("""
 <style>
     div[data-testid="stExpander"] div[role="region"] {
@@ -66,55 +66,54 @@ st.markdown("""
         margin-bottom: 4px;
     }
 
-    /* SANATSAL, MİNİMAL VE MAVİ KAYDIRMA TUŞLARI */
-    .stButton > button {
-        opacity: 0.15;
-        color: #2563eb !important; /* Mavi Simge */
+    /* SADECE YÖN KAYDIRMA BUTONLARI İÇİN MİNİMAL MAVİ STİL */
+    button[help*="Taş"], button[help*="Kaydır"] {
+        opacity: 0.2 !important;
+        color: #2563eb !important;
         border: none !important;
         background: transparent !important;
         padding: 0px !important;
-        font-size: 0.7rem !important; /* Küçük sanatsal boyut */
+        font-size: 0.75rem !important;
         width: 22px !important;
         height: 22px !important;
+        min-width: 22px !important;
+        min-height: 22px !important;
         border-radius: 50% !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    }
-    .stButton > button:hover {
-        opacity: 1.0 !important;
-        color: #1d4ed8 !important;
-        background-color: #eff6ff !important; /* Açık Mavi Arka Plan */
-        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
-        transform: scale(1.2) !important; /* Büyüme Animasyonu */
-    }
-
-    /* DURUM KAYDET BUTONU: YATAY SIKI / DİKEY DAR STİLİ */
-    div[data-testid="stButton"] button[key*="btn_save_status_"] {
-        opacity: 1.0 !important;
-        width: auto !important;
-        min-width: unset !important;
-        height: 26px !important;
-        min-height: 26px !important;
-        padding: 1px 12px !important;
-        font-size: 0.78rem !important;
-        font-weight: 600 !important;
-        border-radius: 6px !important;
-        background-color: #2563eb !important;
-        color: #ffffff !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        white-space: nowrap !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
-        border: 1px solid #1d4ed8 !important;
+        transition: all 0.2s ease-in-out !important;
     }
-    div[data-testid="stButton"] button[key*="btn_save_status_"]:hover {
+    button[help*="Taş"]:hover, button[help*="Kaydır"]:hover {
+        opacity: 1.0 !important;
+        color: #1d4ed8 !important;
+        background-color: #eff6ff !important;
+        box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25) !important;
+        transform: scale(1.15) !important;
+    }
+
+    /* DURUMU KAYDET BUTONU - DÜZGÜN BİÇİMLENDİRME */
+    .save-status-container button {
+        width: auto !important;
+        min-width: 140px !important;
+        height: 32px !important;
+        padding: 2px 16px !important;
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        color: #ffffff !important;
+        background-color: #2563eb !important;
+        border: 1px solid #1d4ed8 !important;
+        border-radius: 6px !important;
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2) !important;
+        white-space: nowrap !important;
+        opacity: 1.0 !important;
+        transform: none !important;
+    }
+    .save-status-container button:hover {
         background-color: #1d4ed8 !important;
         color: #ffffff !important;
+        box-shadow: 0 3px 6px rgba(29, 78, 216, 0.3) !important;
         transform: none !important;
-        box-shadow: 0 2px 5px rgba(29, 78, 216, 0.3) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -233,7 +232,7 @@ with col_m9: st.metric(label="📧 Mail Atıldı", value=f"{mail_atildi_sayisi}"
 st.markdown("---")
 
 # ==============================================================================
-# DİNAMİK BÖLÜM SIRALAMA MEKANİZMASI (SANATSAL MAVİ BUTONLAR)
+# DİNAMİK BÖLÜM SIRALAMA MEKANİZMASI
 # ==============================================================================
 turkey_tz = pytz.timezone("Europe/Istanbul")
 simdi_dt = datetime.now(turkey_tz)
@@ -620,24 +619,19 @@ with col_left:
 
                 with exp_container:
                     st.markdown("**📌 Dosya Durumu**")
-                    col_b1, col_b2, col_b3, col_b4, col_b5, col_b6, col_b7, col_b8 = st.columns(8)
                     
-                    with col_b1:
-                        ch_bagli = st.checkbox("🔗 Bağlı", value=bagli_durumu, key=f"chk_bagli_{d_no}_{d_idx}")
-                    with col_b2:
-                        ch_red = st.checkbox("❌ Kapatma Red", value=kapatma_red_durumu, key=f"chk_red_{d_no}_{d_idx}")
-                    with col_b3:
-                        ch_tescild = st.checkbox("⏳ Tescilde", value=tescilde_durumu, key=f"chk_tescild_{d_no}_{d_idx}")
-                    with col_b4:
-                        ch_kapatma = st.checkbox("🏁 Kapatmada", value=kapatma_asamasinda_durumu, key=f"chk_kapatma_{d_no}_{d_idx}")
-                    with col_b5:
-                        ch_yazi = st.checkbox("✉️ Yazı Cevabı", value=yazi_cevabi_durumu, key=f"chk_yazi_{d_no}_{d_idx}")
-                    with col_b6:
-                        ch_incel = st.checkbox("🔍 İncelenmedi", value=incelenmedi_durumu, key=f"chk_incel_{d_no}_{d_idx}")
-                    with col_b7:
-                        ch_incmd = st.checkbox("🧐 İncelemede", value=incelemede_durumu, key=f"chk_incmd_{d_no}_{d_idx}")
-                    with col_b8:
-                        ch_mail = st.checkbox("📧 Mail Atıldı", value=mail_atildi_durumu, key=f"chk_mail_{d_no}_{d_idx}")
+                    # Checkbox'ların ekrana rahat sığması için 4'erli 2 satıra bölündü
+                    c_row1_1, c_row1_2, c_row1_3, c_row1_4 = st.columns(4)
+                    with c_row1_1: ch_bagli = st.checkbox("🔗 Bağlı", value=bagli_durumu, key=f"chk_bagli_{d_no}_{d_idx}")
+                    with c_row1_2: ch_red = st.checkbox("❌ Red", value=kapatma_red_durumu, key=f"chk_red_{d_no}_{d_idx}")
+                    with c_row1_3: ch_tescild = st.checkbox("⏳ Tescilde", value=tescilde_durumu, key=f"chk_tescild_{d_no}_{d_idx}")
+                    with c_row1_4: ch_kapatma = st.checkbox("🏁 Kapatmada", value=kapatma_asamasinda_durumu, key=f"chk_kapatma_{d_no}_{d_idx}")
+
+                    c_row2_1, c_row2_2, c_row2_3, c_row2_4 = st.columns(4)
+                    with c_row2_1: ch_yazi = st.checkbox("✉️ Yazı Cevabı", value=yazi_cevabi_durumu, key=f"chk_yazi_{d_no}_{d_idx}")
+                    with c_row2_2: ch_incel = st.checkbox("🔍 İncelenmedi", value=incelenmedi_durumu, key=f"chk_incel_{d_no}_{d_idx}")
+                    with c_row2_3: ch_incmd = st.checkbox("🧐 İncelemede", value=incelemede_durumu, key=f"chk_incmd_{d_no}_{d_idx}")
+                    with c_row2_4: ch_mail = st.checkbox("📧 Mail Atıldı", value=mail_atildi_durumu, key=f"chk_mail_{d_no}_{d_idx}")
 
                     guncel_mail_tarihi = mail_tarihi_val
                     if ch_mail:
@@ -653,8 +647,8 @@ with col_left:
                                 placeholder="GG.AA.YYYY"
                             )
 
-                    # DURUMU KAYDET BUTONU (Yatay sığacak kadar geniş, dikey ince)
-                    if st.button("💾 Durumu Kaydet", key=f"btn_save_status_{d_no}_{d_idx}", use_container_width=False):
+                    st.markdown("<div class='save-status-container'>", unsafe_allow_html=True)
+                    if st.button("💾 Durumu Kaydet", key=f"btn_save_status_{d_no}_{d_idx}"):
                         dosya["BagliDosya"] = ch_bagli
                         dosya["KapatmaRed"] = ch_red
                         dosya["TescildeBekleyen"] = ch_tescild
@@ -668,6 +662,7 @@ with col_left:
                         verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} dosya durumu güncellendi")
                         st.toast(f"✅ '{d_no}' dosyasının durumu başarıyla kaydedildi!")
                         st.rerun()
+                    st.markdown("</div>", unsafe_allow_html=True)
 
                     st.markdown("---")
 
