@@ -766,7 +766,9 @@
       "IncelemedeSiraNo": 9999
     }
   ],
-  "OnemliNotlar": [],
+  "OnemliNotlar": [
+    "mk"
+  ],
   "Hatirlatmalar": [],
   "BolumSirasi": [
     "kapatma",
