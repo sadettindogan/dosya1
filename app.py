@@ -47,13 +47,23 @@ def verileri_getir():
         file_content = repo.get_contents(FILE_PATH)
         raw_data = json.loads(file_content.decoded_content.decode('utf-8'))
         
-        # Eğer veri dict formatında saklanıyorsa (Dosyalar + OnemliNotlar)
         if isinstance(raw_data, dict):
             kayitlar_data = raw_data.get("Dosyalar", [])
-            onemli_notlar_data = raw_data.get("OnemliNotlar", "")
+            onemli_notlar_raw = raw_data.get("OnemliNotlar", [])
         else:
             kayitlar_data = raw_data if isinstance(raw_data, list) else []
-            onemli_notlar_data = ""
+            onemli_notlar_raw = []
+
+        # Eski metin formatındaki notları listeye dönüştürme kontrolü
+        if isinstance(onemli_notlar_raw, str):
+            if onemli_notlar_raw.strip():
+                onemli_notlar_data = [onemli_notlar_raw.strip()]
+            else:
+                onemli_notlar_data = []
+        elif isinstance(onemli_notlar_raw, list):
+            onemli_notlar_data = onemli_notlar_raw
+        else:
+            onemli_notlar_data = []
 
         yeni_format_data = []
         for item in kayitlar_data:
@@ -81,7 +91,7 @@ def verileri_getir():
             
         return yeni_format_data, onemli_notlar_data
     except Exception:
-        return [], ""
+        return [], []
 
 def verileri_kaydet(yeni_kayitlar, onemli_notlar, mesaj):
     kaydedilecek_veri = {
@@ -137,27 +147,43 @@ with col_m8:
 st.markdown("---")
 
 # ==============================================================================
-# ÖNEMLİ NOTLAR BÖLÜMÜ (YATAYDA KOMPAKT)
+# ÖNEMLİ NOTLAR BÖLÜMÜ (ÇOKLU NOT EKLEME VE SAĞDA SİL BUTONU)
 # ==============================================================================
 with st.container():
     st.subheader("📌 Önemli Notlar")
-    with st.form(key="form_onemli_notlar"):
-        c_not_input, c_not_btn = st.columns([5, 1], vertical_alignment="bottom")
-        with c_not_input:
-            yeni_onemli_not = st.text_area(
-                "Önemli Notlar", 
-                value=mevcut_onemli_notlar, 
-                placeholder="Genel hatırlatmaları veya önemli notları buraya yazabilirsiniz...", 
-                height=68,
-                label_visibility="collapsed"
-            )
+    
+    # 1. YENİ NOT EKLEME FORMU
+    with st.form(key="form_yeni_not_ekle", clear_on_submit=True):
+        c_not_inp, c_not_btn = st.columns([5, 1], vertical_alignment="center")
+        with c_not_inp:
+            yeni_not_metni = st.text_input("Yeni Not", placeholder="Eklenecek notu buraya yazınız...", label_visibility="collapsed")
         with c_not_btn:
-            submit_not = st.form_submit_button("💾 Notu Kaydet", use_container_width=True)
+            submit_not = st.form_submit_button("➕ Yeni Not Ekle", use_container_width=True)
             
         if submit_not:
-            verileri_kaydet(kayitlar, yeni_onemli_not.strip(), "Önemli notlar güncellendi")
-            st.toast("✅ Önemli notlar başarıyla kaydedildi!")
-            st.rerun()
+            if yeni_not_metni.strip() != "":
+                mevcut_onemli_notlar.append(yeni_not_metni.strip())
+                verileri_kaydet(kayitlar, mevcut_onemli_notlar, "Yeni önemli not eklendi")
+                st.toast("✅ Yeni not başarıyla eklendi!")
+                st.rerun()
+            else:
+                st.warning("Not alanı boş olamaz.")
+
+    # 2. EKLENMİŞ NOTLARIN LİSTELENMESİ VE SAĞINDA SİL BUTONU
+    if mevcut_onemli_notlar:
+        st.write("")
+        for n_idx, not_item in enumerate(mevcut_onemli_notlar):
+            c_not_text, c_not_del = st.columns([95, 5], vertical_alignment="center")
+            with c_not_text:
+                st.info(f"📌 {not_item}")
+            with c_not_del:
+                if st.button("🗑️", key=f"btn_del_not_{n_idx}", help="Bu notu sil"):
+                    mevcut_onemli_notlar.pop(n_idx)
+                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, "Önemli not silindi")
+                    st.toast("Not silindi!")
+                    st.rerun()
+    else:
+        st.caption("*Henüz eklenmiş bir önemli not bulunmuyor.*")
 
 st.markdown("---")
 
@@ -223,6 +249,7 @@ with col_left:
                     else:
                         mail_baslik_eki = " 📧 (mail atıldı)"
 
+                # BAŞLIK ALANINI YATAYDA 1/3 DARALTALIM ([60, 40] DÜZENİ)
                 col_exp, _space, col_dosya_sil = st.columns([60, 33, 7], vertical_alignment="center")
                 
                 with col_exp:
@@ -598,7 +625,7 @@ with col_right:
         
         with col_evet:
             if st.button("✅ Evet, Tümünü Sil", type="primary", use_container_width=True):
-                verileri_kaydet([], "", "Tüm dosyalar veritabanından silindi")
+                verileri_kaydet([], [], "Tüm dosyalar veritabanından silindi")
                 st.session_state.confirm_delete_all = False
                 if "rapor_cikti" in st.session_state:
                     st.session_state["rapor_cikti"] = ""
