@@ -432,7 +432,7 @@
       "BagliDosya": false,
       "KapatmaRed": false,
       "TescildeBekleyen": false,
-      "KapatmaAsamasinda": true,
+      "KapatmaAsamasinda": false,
       "YaziCevabiBekleyen": false,
       "Incelenmedi": false,
       "MailAtildi": false,
