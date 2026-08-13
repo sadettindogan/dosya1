@@ -8,7 +8,7 @@ from github import Github
 
 # Sayfa Yapılandırması (Geniş Ekran)
 st.set_page_config(
-    page_title="Dosya İşlem ve Takip Portalı", 
+    page_title="Dosya Takibi", 
     page_icon="📁",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -233,7 +233,7 @@ for h in mevcut_hatirlatmalar:
             pass
 
 # BAŞLIK
-st.title("📁 Dosya İşlem ve Takip Portalı")
+st.title("📁 Dosya Takibi")
 
 # ZAMANI GELEN HATIRLATMA VARSA BAŞLIĞIN ALTINDA KIRMIZI UYARI
 if zamani_gelen_var:
@@ -566,7 +566,7 @@ col_left, col_right = st.columns([65, 35], gap="large")
 # SOL TARAF: GENİŞ DOSYA LİSTESİ VE GEÇMİŞ İŞLEMLER
 # ==============================================================================
 with col_left:
-    st.subheader("📋 Kayıtlı Dosyalar ve Geçmiş İşlem Zaman Çizelgesi")
+    st.subheader("📋 Kayıtlı Dosyalar ve Dosyada Bugüne Kadar Yapılan İşlemler")
     
     search_col, _ = st.columns([1, 2])
     with search_col:
@@ -713,8 +713,8 @@ with col_left:
 
                     st.markdown("---")
 
-                    # GEÇMİŞ İŞLEMLER VE YENİ İŞLEM EKLEME
-                    st.markdown("##### 🕒 Geçmiş İşlem Zaman Çizelgesi")
+                    # DOSYADA BUGÜNE KADAR YAPILAN İŞLEMLER VE YENİ İŞLEM EKLEME
+                    st.markdown("##### 🕒 Dosyada Bugüne Kadar Yapılan İşlemler")
                     
                     if islemler:
                         for i_idx, islem in enumerate(reversed(islemler)):
@@ -758,7 +758,7 @@ with col_left:
         st.info("Henüz kayıtlı dosya yok.")
 
 # ==============================================================================
-# SAĞ TARAF: YENİ DOSYA EKLEME, EXCEL AKTARIMI VE TOPLU İŞLEMLER
+# SAĞ TARAF: YENİ DOSYA EKLEME, EXCEL AKTARIMI, RAPOR OLUŞTURMA VE TOPLU İŞLEMLER
 # ==============================================================================
 with col_right:
     st.subheader("➕ Yeni Dosya Ekle")
@@ -815,6 +815,67 @@ with col_right:
 
     st.markdown("---")
 
+    # ==========================================================================
+    # RAPOR OLUŞTURMA BÖLÜMÜ
+    # ==========================================================================
+    st.subheader("📄 Rapor Oluştur")
+    
+    with st.expander("🛠️ Rapor Kriterleri ve İndirme", expanded=False):
+        rapor_filtre = st.selectbox(
+            "Rapor Edilecek Durum",
+            [
+                "Tüm Dosyalar",
+                "Kapatma Aşamasında Olanlar",
+                "İncelenmedi İşaretliler",
+                "İncelemede İşaretliler",
+                "Yazı Cevabı Bekleyenler",
+                "Tescilde Bekleyenler",
+                "Reddedilenler",
+                "Mail Atılanlar"
+            ]
+        )
+
+        filtreli_rapor_listesi = []
+        for d in kayitlar:
+            uygun = False
+            if rapor_filtre == "Tüm Dosyalar": uygun = True
+            elif rapor_filtre == "Kapatma Aşamasında Olanlar" and d.get("KapatmaAsamasinda"): uygun = True
+            elif rapor_filtre == "İncelenmedi İşaretliler" and d.get("Incelenmedi"): uygun = True
+            elif rapor_filtre == "İncelemede İşaretliler" and d.get("Incelemede"): uygun = True
+            elif rapor_filtre == "Yazı Cevabı Bekleyenler" and d.get("YaziCevabiBekleyen"): uygun = True
+            elif rapor_filtre == "Tescilde Bekleyenler" and d.get("TescildeBekleyen"): uygun = True
+            elif rapor_filtre == "Reddedilenler" and d.get("KapatmaRed"): uygun = True
+            elif rapor_filtre == "Mail Atılanlar" and d.get("MailAtildi"): uygun = True
+
+            if uygun:
+                isl_str = " \n".join([f"• {i.get('Tarih','')}: {i.get('Not','')}" for i in d.get("Islemler", [])])
+                filtreli_rapor_listesi.append({
+                    "Dosya No": d.get("Dosya No", ""),
+                    "Firma": d.get("Firma", ""),
+                    "Açıklama": d.get("Aciklama", ""),
+                    "Son İşlemler": isl_str,
+                    "Mail Tarihi": d.get("MailTarihi", "")
+                })
+
+        st.write(f"📊 **Seçilen Kriterdeki Toplam Dosya:** {len(filtreli_rapor_listesi)}")
+
+        if filtreli_rapor_listesi:
+            df_rapor = pd.DataFrame(filtreli_rapor_listesi)
+            rapor_output = io.BytesIO()
+            with pd.ExcelWriter(rapor_output, engine='openpyxl') as writer:
+                df_rapor.to_excel(writer, index=False, sheet_name='Rapor')
+            rapor_excel_data = rapor_output.getvalue()
+
+            st.download_button(
+                label="📥 Seçili Raporu Excel Olarak İndir",
+                data=rapor_excel_data,
+                file_name=f"Dosya_Raporu_{simdi_dt.strftime('%d_%m_%Y')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+
+    st.markdown("---")
+
     # EXCEL İŞLEMLERİ
     st.subheader("📊 Excel İşlemleri")
     
@@ -847,7 +908,7 @@ with col_right:
         excel_data = output.getvalue()
 
         st.download_button(
-            label="📥 Dosyaları Excel Olarak İndir",
+            label="📥 Tüm Dosyaları Excel Olarak İndir",
             data=excel_data,
             file_name=f"Dosya_Takip_{simdi_dt.strftime('%d_%m_%Y')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
