@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Ultra Sıkılaştırılmış CSS
+# Ultra Sıkılaştırılmış CSS ve Hover İle Görünür Olan Yön Tuşları
 st.markdown("""
 <style>
     div[data-testid="stExpander"] div[role="region"] {
@@ -65,6 +65,20 @@ st.markdown("""
         font-size: 0.85rem;
         margin-bottom: 4px;
     }
+
+    /* HOVER (ÜZERİNE GELİNCE GÖRÜNEN) KAYDIRMA TUŞLARI */
+    .stButton > button {
+        opacity: 0.15;
+        transition: opacity 0.2s ease-in-out, background-color 0.2s;
+        border: none !important;
+        background: transparent !important;
+        padding: 0px 4px !important;
+    }
+    .stButton > button:hover {
+        opacity: 1.0 !important;
+        background-color: #e2e8f0 !important;
+        border-radius: 4px !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -106,7 +120,6 @@ def verileri_getir():
 
         hatirlatmalar_data = hatirlatmalar_raw if isinstance(hatirlatmalar_raw, list) else []
 
-        # Bölüm sırası eksikse tamamla
         for b in VARSAYILAN_BOLUM_SIRASI:
             if b not in bolum_sirasi_data:
                 bolum_sirasi_data.append(b)
@@ -183,7 +196,7 @@ with col_m9: st.metric(label="📧 Mail Atıldı", value=f"{mail_atildi_sayisi}"
 st.markdown("---")
 
 # ==============================================================================
-# DİNAMİK BÖLÜM SIRALAMA MEKANİZMASI (SOLA / SAĞA KAYDIRILABİLİR)
+# DİNAMİK BÖLÜM SIRALAMA MEKANİZMASI (HOVER İLE GÖRÜNEN BUTONLAR)
 # ==============================================================================
 turkey_tz = pytz.timezone("Europe/Istanbul")
 simdi_dt = datetime.now(turkey_tz)
@@ -197,7 +210,6 @@ def bolum_sol_sag_kaydir(bolum_kodu, yon):
     verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{bolum_kodu} bölümü {yon}a kaydırıldı")
     st.rerun()
 
-# 5 Dinamik Sütun Tanımlama
 genislik_haritasi = {
     "kapatma": 1.1,
     "incelenmedi": 1.1,
@@ -212,22 +224,19 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
     target_col = top_cols[col_idx]
     
     with target_col:
-        # BAŞLIK VE SOL/SAĞ KAYDIRMA BUTONLARI
-        c_head_txt, c_head_left, c_head_right = st.columns([70, 15, 15], vertical_alignment="center")
+        c_head_txt, c_head_left, c_head_right = st.columns([78, 11, 11], vertical_alignment="center")
         
         with c_head_left:
             if col_idx > 0:
-                if st.button("◀️", key=f"btn_m_left_{bolum_kodu}", help="Bölümü Sola Kaydır"):
+                if st.button("◀", key=f"btn_m_left_{bolum_kodu}", help="Bölümü Sola Kaydır"):
                     bolum_sol_sag_kaydir(bolum_kodu, "sol")
                     
         with c_head_right:
             if col_idx < len(mevcut_bolum_sirasi) - 1:
-                if st.button("▶️", key=f"btn_m_right_{bolum_kodu}", help="Bölümü Sağa Kaydır"):
+                if st.button("▶", key=f"btn_m_right_{bolum_kodu}", help="Bölümü Sağa Kaydır"):
                     bolum_sol_sag_kaydir(bolum_kodu, "sag")
 
-        # ----------------------------------------------------------------------
         # 1. KAPATMA AŞAMASINDA
-        # ----------------------------------------------------------------------
         if bolum_kodu == "kapatma":
             with c_head_txt:
                 st.subheader("🏁 Kapatmada")
@@ -241,12 +250,12 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
                         k_dno = k_dosya.get("Dosya No", "")
                         k_firma = k_dosya.get("Firma", "-")
                         
-                        c_k_txt, c_k_up, c_k_down = st.columns([72, 14, 14], vertical_alignment="center")
+                        c_k_txt, c_k_up, c_k_down = st.columns([78, 11, 11], vertical_alignment="center")
                         with c_k_txt:
                             st.markdown(f"**{k_idx + 1}.** `{k_dno}` | <small>{k_firma}</small>", unsafe_allow_html=True)
                         
                         with c_k_up:
-                            if st.button("⬆️", key=f"btn_kp_up_{k_dno}_{k_idx}", help="Yukarı Taş"):
+                            if st.button("▲", key=f"btn_kp_up_{k_dno}_{k_idx}", help="Yukarı Taş"):
                                 if k_idx > 0:
                                     ust_dosya = kapatmada_dosyalar[k_idx - 1]
                                     curr_sira = k_dosya.get("SiraNo", k_idx)
@@ -262,7 +271,7 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
                                 st.rerun()
 
                         with c_k_down:
-                            if st.button("⬇️", key=f"btn_kp_dn_{k_dno}_{k_idx}", help="Aşağı Taş"):
+                            if st.button("▼", key=f"btn_kp_dn_{k_dno}_{k_idx}", help="Aşağı Taş"):
                                 if k_idx < len(kapatmada_dosyalar) - 1:
                                     alt_dosya = kapatmada_dosyalar[k_idx + 1]
                                     curr_sira = k_dosya.get("SiraNo", k_idx)
@@ -277,9 +286,7 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
                 else:
                     st.caption("*Kapatma aşamasında dosya yok.*")
 
-        # ----------------------------------------------------------------------
         # 2. İNCELENMEDİ
-        # ----------------------------------------------------------------------
         elif bolum_kodu == "incelenmedi":
             with c_head_txt:
                 st.subheader("🔍 İncelenmedi")
@@ -293,12 +300,12 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
                         i_dno = i_dosya.get("Dosya No", "")
                         i_firma = i_dosya.get("Firma", "-")
                         
-                        c_i_txt, c_i_up, c_i_down = st.columns([72, 14, 14], vertical_alignment="center")
+                        c_i_txt, c_i_up, c_i_down = st.columns([78, 11, 11], vertical_alignment="center")
                         with c_i_txt:
                             st.markdown(f"**{i_idx + 1}.** `{i_dno}` | <small>{i_firma}</small>", unsafe_allow_html=True)
                         
                         with c_i_up:
-                            if st.button("⬆️", key=f"btn_inc_up_{i_dno}_{i_idx}", help="Yukarı Taş"):
+                            if st.button("▲", key=f"btn_inc_up_{i_dno}_{i_idx}", help="Yukarı Taş"):
                                 if i_idx > 0:
                                     ust_dosya = incelenmedi_dosyalar[i_idx - 1]
                                     curr_sira = i_dosya.get("IncelenmediSiraNo", i_idx)
@@ -314,7 +321,7 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
                                 st.rerun()
 
                         with c_i_down:
-                            if st.button("⬇️", key=f"btn_inc_dn_{i_dno}_{i_idx}", help="Aşağı Taş"):
+                            if st.button("▼", key=f"btn_inc_dn_{i_dno}_{i_idx}", help="Aşağı Taş"):
                                 if i_idx < len(incelenmedi_dosyalar) - 1:
                                     alt_dosya = incelenmedi_dosyalar[i_idx + 1]
                                     curr_sira = i_dosya.get("IncelenmediSiraNo", i_idx)
@@ -329,9 +336,7 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
                 else:
                     st.caption("*İncelenmedi işaretli dosya yok.*")
 
-        # ----------------------------------------------------------------------
         # 3. İNCELEMEDE
-        # ----------------------------------------------------------------------
         elif bolum_kodu == "incelemede":
             with c_head_txt:
                 st.subheader("🧐 İncelemede")
@@ -345,12 +350,12 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
                         m_dno = m_dosya.get("Dosya No", "")
                         m_firma = m_dosya.get("Firma", "-")
                         
-                        c_m_txt, c_m_up, c_m_down = st.columns([72, 14, 14], vertical_alignment="center")
+                        c_m_txt, c_m_up, c_m_down = st.columns([78, 11, 11], vertical_alignment="center")
                         with c_m_txt:
                             st.markdown(f"**{m_idx + 1}.** `{m_dno}` | <small>{m_firma}</small>", unsafe_allow_html=True)
                         
                         with c_m_up:
-                            if st.button("⬆️", key=f"btn_incmd_up_{m_dno}_{m_idx}", help="Yukarı Taş"):
+                            if st.button("▲", key=f"btn_incmd_up_{m_dno}_{m_idx}", help="Yukarı Taş"):
                                 if m_idx > 0:
                                     ust_dosya = incelemede_dosyalar[m_idx - 1]
                                     curr_sira = m_dosya.get("IncelemedeSiraNo", m_idx)
@@ -366,7 +371,7 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
                                 st.rerun()
 
                         with c_m_down:
-                            if st.button("⬇️", key=f"btn_incmd_dn_{m_dno}_{m_idx}", help="Aşağı Taş"):
+                            if st.button("▼", key=f"btn_incmd_dn_{m_dno}_{m_idx}", help="Aşağı Taş"):
                                 if m_idx < len(incelemede_dosyalar) - 1:
                                     alt_dosya = incelemede_dosyalar[m_idx + 1]
                                     curr_sira = m_dosya.get("IncelemedeSiraNo", m_idx)
@@ -381,9 +386,7 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
                 else:
                     st.caption("*İncelemede işaretli dosya yok.*")
 
-        # ----------------------------------------------------------------------
         # 4. ÖNEMLİ NOTLAR
-        # ----------------------------------------------------------------------
         elif bolum_kodu == "notlar":
             with c_head_txt:
                 st.subheader("📌 Önemli Notlar")
@@ -416,9 +419,7 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
                 else:
                     st.caption("*Henüz kayıtlı not yok.*")
 
-        # ----------------------------------------------------------------------
         # 5. HATIRLATMALAR
-        # ----------------------------------------------------------------------
         elif bolum_kodu == "hatirlatma":
             saat_str = simdi_dt.strftime("%d.%m.%Y | %H:%M:%S")
             st.markdown(f"<div class='digital-clock'>🕒 {saat_str}</div>", unsafe_allow_html=True)
