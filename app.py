@@ -8,7 +8,7 @@ from github import Github
 
 # Sayfa Yapılandırması (Geniş Ekran)
 st.set_page_config(
-    page_title="Dosya Takibi", 
+    page_title="Dosya İşlem ve Takip Portalı", 
     page_icon="📁",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -233,7 +233,7 @@ for h in mevcut_hatirlatmalar:
             pass
 
 # BAŞLIK
-st.title("📁 Dosya Takibi")
+st.title("📁 Dosya İşlem ve Takip Portalı")
 
 # ZAMANI GELEN HATIRLATMA VARSA BAŞLIĞIN ALTINDA KIRMIZI UYARI
 if zamani_gelen_var:
@@ -550,7 +550,7 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
                                     verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, "Hatırlatma tamamlandı")
                                     st.rerun()
                             else:
-                                if st.button("🗑️", key=f"btn_del_h_{h_idx}", help="Sil"):
+                                if st.button("🗑️", key=f"del_h_{h_idx}", help="Sil"):
                                     mevcut_hatirlatmalar.pop(h_idx)
                                     verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, "Hatırlatma silindi")
                                     st.rerun()
@@ -566,7 +566,7 @@ col_left, col_right = st.columns([65, 35], gap="large")
 # SOL TARAF: GENİŞ DOSYA LİSTESİ VE GEÇMİŞ İŞLEMLER
 # ==============================================================================
 with col_left:
-    st.subheader("📋 Kayıtlı Dosyalar ve İşlem Akışı")
+    st.subheader("📋 Kayıtlı Dosyalar ve Geçmiş İşlem Zaman Çizelgesi")
     
     search_col, _ = st.columns([1, 2])
     with search_col:
@@ -714,7 +714,7 @@ with col_left:
                     st.markdown("---")
 
                     # GEÇMİŞ İŞLEMLER VE YENİ İŞLEM EKLEME
-                    st.markdown("##### 🕒 Dosyada Bugüne Kadar Yapılan İşlemler")
+                    st.markdown("##### 🕒 Geçmiş İşlem Zaman Çizelgesi")
                     
                     if islemler:
                         for i_idx, islem in enumerate(reversed(islemler)):
