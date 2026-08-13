@@ -13,33 +13,50 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Sıkılaştırılmış CSS, Scroll Yüksekliği ve Animasyonlar
+# Ultra Sıkılaştırılmış CSS (Dikey Boyutları 1/5 Oranına Düşürme)
 st.markdown("""
 <style>
-    /* Expander ve form elemanları arasındaki dikey boşlukları daraltma */
+    /* Expander ve form elemanları dikey iç boşluklarını daraltma */
     div[data-testid="stExpander"] div[role="region"] {
-        padding-top: 0.2rem !important;
-        padding-bottom: 0.5rem !important;
+        padding-top: 0.1rem !important;
+        padding-bottom: 0.2rem !important;
     }
     .element-container {
-        margin-bottom: -0.2rem !important;
+        margin-bottom: -0.4rem !important;
     }
     hr {
-        margin-top: 0.4rem !important;
-        margin-bottom: 0.4rem !important;
+        margin-top: 0.3rem !important;
+        margin-bottom: 0.3rem !important;
     }
     
+    /* Liste Elemanlarının Dikey Boyutlarını Küçültme */
+    div[data-testid="stAlert"] {
+        padding-top: 0.2rem !important;
+        padding-bottom: 0.2rem !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        margin-bottom: 0.2rem !important;
+        min-height: auto !important;
+    }
+
+    /* Kapatma ve Not Satır Sıkılaştırma */
+    .compact-row {
+        padding: 2px 0px;
+        margin-bottom: 2px;
+        line-height: 1.2;
+    }
+
     /* Dijital Saat Stili */
     .digital-clock {
         font-family: 'Courier New', Courier, monospace;
-        font-size: 0.95rem;
+        font-size: 0.85rem;
         font-weight: bold;
         color: #008080;
         background-color: #f0f4f8;
-        padding: 3px 8px;
+        padding: 2px 6px;
         border-radius: 4px;
         display: inline-block;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
         border: 1px solid #cbd5e1;
     }
 
@@ -51,12 +68,12 @@ st.markdown("""
     }
     .blinking-reminder {
         animation: blinker 1s linear infinite;
-        padding: 8px 12px;
-        border-radius: 6px;
-        border: 2px solid #ef4444;
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1.5px solid #ef4444;
         font-weight: bold;
-        font-size: 0.9rem;
-        margin-bottom: 6px;
+        font-size: 0.85rem;
+        margin-bottom: 4px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -169,7 +186,7 @@ with col_m8:
 st.markdown("---")
 
 # ==============================================================================
-# ÜÇLÜ YAN YANA PANEL (1/5 BOYUTLARINDA): KAPATMADA - NOTLAR - HATIRLATMALAR
+# ÜÇLÜ YAN YANA PANEL (1/5 BOYUTLARINDA - KOMPAKT DİKEY DÜZEN)
 # ==============================================================================
 turkey_tz = pytz.timezone("Europe/Istanbul")
 simdi_dt = datetime.now(turkey_tz)
@@ -180,7 +197,6 @@ col_kapatma_panel, col_not, col_hatirlatma, _ = st.columns([1, 1, 1, 2])
 with col_kapatma_panel:
     st.subheader("🏁 Kapatma Aşamasındakiler")
     
-    # Sadece KapatmaAsamasinda = True olan dosyaları sırala
     kapatmada_dosyalar = [d for d in kayitlar if d.get("KapatmaAsamasinda", False)]
     kapatmada_dosyalar = sorted(kapatmada_dosyalar, key=lambda x: x.get("SiraNo", 9999))
     
@@ -190,17 +206,14 @@ with col_kapatma_panel:
                 k_dno = k_dosya.get("Dosya No", "")
                 k_firma = k_dosya.get("Firma", "-")
                 
-                c_k_txt, c_k_up, c_k_down = st.columns([70, 15, 15], vertical_alignment="center")
+                c_k_txt, c_k_up, c_k_down = st.columns([72, 14, 14], vertical_alignment="center")
                 
                 with c_k_txt:
-                    st.markdown(f"**{k_idx + 1}.** `{k_dno}`")
-                    st.caption(f"🏢 {k_firma}")
+                    st.markdown(f"**{k_idx + 1}.** `{k_dno}` | <small>{k_firma}</small>", unsafe_allow_html=True)
                 
                 with c_k_up:
-                    if st.button("⬆️", key=f"btn_kp_up_{k_dno}_{k_idx}", help="Yukarı / İlk Sıraya Kaydır"):
-                        # Sıralama değiştirme mantığı
+                    if st.button("⬆️", key=f"btn_kp_up_{k_dno}_{k_idx}", help="Yukarı Taş"):
                         if k_idx > 0:
-                            # Bir üstteki elemanla sıra no değiştir
                             ust_dosya = kapatmada_dosyalar[k_idx - 1]
                             curr_sira = k_dosya.get("SiraNo", k_idx)
                             ust_sira = ust_dosya.get("SiraNo", k_idx - 1)
@@ -208,19 +221,16 @@ with col_kapatma_panel:
                             k_dosya["SiraNo"] = ust_sira if ust_sira != curr_sira else k_idx - 1
                             ust_dosya["SiraNo"] = curr_sira if ust_sira != curr_sira else k_idx
                         else:
-                            # Zaten en üstteyse en küçük sıra numarasını ver
                             k_dosya["SiraNo"] = -1
                             
-                        # Tüm liste için sıra noları yeniden indeksle
                         for idx, d in enumerate(sorted(kapatmada_dosyalar, key=lambda x: x.get("SiraNo", 9999))):
                             d["SiraNo"] = idx
                             
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{k_dno} kapatma sırasında yukarı kaydırıldı")
-                        st.toast(f"'{k_dno}' yukarı taşındı!")
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{k_dno} kapatma sırasında yukarı taşındı")
                         st.rerun()
 
                 with c_k_down:
-                    if st.button("⬇️", key=f"btn_kp_dn_{k_dno}_{k_idx}", help="Aşağı Kaydır"):
+                    if st.button("⬇️", key=f"btn_kp_dn_{k_dno}_{k_idx}", help="Aşağı Taş"):
                         if k_idx < len(kapatmada_dosyalar) - 1:
                             alt_dosya = kapatmada_dosyalar[k_idx + 1]
                             curr_sira = k_dosya.get("SiraNo", k_idx)
@@ -232,12 +242,10 @@ with col_kapatma_panel:
                             for idx, d in enumerate(sorted(kapatmada_dosyalar, key=lambda x: x.get("SiraNo", 9999))):
                                 d["SiraNo"] = idx
                                 
-                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{k_dno} kapatma sırasında aşağı kaydırıldı")
-                            st.toast(f"'{k_dno}' aşağı taşındı!")
+                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{k_dno} kapatma sırasında aşağı taşındı")
                             st.rerun()
-                st.divider()
         else:
-            st.caption("*Kapatma aşamasında işaretli dosya bulunmuyor.*")
+            st.caption("*Kapatma aşamasında işaretli dosya yok.*")
 
 # --- 2. BÖLÜM: ÖNEMLİ NOTLAR ---
 with col_not:
@@ -259,7 +267,7 @@ with col_not:
     with st.container(height=200):
         if mevcut_onemli_notlar:
             for n_idx, not_item in enumerate(mevcut_onemli_notlar):
-                c_not_text, c_not_del = st.columns([80, 20], vertical_alignment="center")
+                c_not_text, c_not_del = st.columns([82, 18], vertical_alignment="center")
                 with c_not_text:
                     st.info(f"📌 {not_item}")
                 with c_not_del:
@@ -275,17 +283,17 @@ with col_not:
 with col_hatirlatma:
     saat_str = simdi_dt.strftime("%d.%m.%Y | %H:%M:%S")
     st.markdown(f"<div class='digital-clock'>🕒 {saat_str}</div>", unsafe_allow_html=True)
-    st.subheader("⏰ Hatırlatma Listesi")
+    st.subheader("⏰ Hatırlatmalar")
 
     with st.form(key="form_yeni_hatirlatma_ekle", clear_on_submit=True):
-        h_metin = st.text_input("Hatırlatma Metni", placeholder="Hatırlatma yazınız...", label_visibility="collapsed")
+        h_metin = st.text_input("Hatırlatma Metni", placeholder="Hatırlatma...", label_visibility="collapsed")
         col_hd, col_ht = st.columns(2)
         with col_hd:
             h_tarih = st.date_input("Tarih", value=simdi_dt.date())
         with col_ht:
             h_saat = st.time_input("Saat", value=simdi_dt.time())
             
-        submit_hatirlatma = st.form_submit_button("➕ Yeni Hatırlatma Ekle", use_container_width=True)
+        submit_hatirlatma = st.form_submit_button("➕ Ekle", use_container_width=True)
 
         if submit_hatirlatma:
             if h_metin.strip() != "":
@@ -323,22 +331,20 @@ with col_hatirlatma:
                     else:
                         gosterim_tarih = h_zaman_str[8:10] + "." + h_zaman_str[5:7] + " " + h_zaman_str[11:16]
                         if h_tamamlandi:
-                            st.caption(f"✅ ~~{h_metin_val}~~ ({gosterim_tarih})")
+                            st.caption(f"✅ ~~{h_metin_val}~~")
                         else:
-                            st.warning(f"⏰ {h_metin_val}\n\n🗓️ `{gosterim_tarih}`")
+                            st.warning(f"⏰ {h_metin_val} ({gosterim_tarih})")
 
                 with c_h_action:
                     if zaman_geldi:
-                        if st.button("Tamam", key=f"btn_ok_h_{h_idx}", type="primary", help="Yanıp sönmeyi durdur"):
+                        if st.button("Tamam", key=f"btn_ok_h_{h_idx}", type="primary", help="Duraklat"):
                             h_item["Tamamlandi"] = True
                             verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, "Hatırlatma tamamlandı")
-                            st.toast("Yanıp sönme durduruldu.")
                             st.rerun()
                     else:
-                        if st.button("🗑️", key=f"btn_del_h_{h_idx}", help="Hatırlatmayı Sil"):
+                        if st.button("🗑️", key=f"btn_del_h_{h_idx}", help="Sil"):
                             mevcut_hatirlatmalar.pop(h_idx)
                             verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, "Hatırlatma silindi")
-                            st.toast("Hatırlatma silindi!")
                             st.rerun()
         else:
             st.caption("*Henüz kayıtlı hatırlatma yok.*")
