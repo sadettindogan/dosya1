@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Kesin CSS Düzeltmeleri: Kaydırma Butonları ile Normal Butonları Ayırma
+# Kesin CSS Düzeltmeleri
 st.markdown("""
 <style>
     div[data-testid="stExpander"] div[role="region"] {
@@ -50,20 +50,30 @@ st.markdown("""
         border: 1px solid #cbd5e1;
     }
 
-    /* Yanıp Sönen Hatırlatma Stili */
-    @keyframes blinker {
-        0% { background-color: #ffe4e6; border-color: #ef4444; color: #991b1b; }
-        50% { background-color: #fef08a; border-color: #eab308; color: #854d0e; }
-        100% { background-color: #ffe4e6; border-color: #ef4444; color: #991b1b; }
-    }
-    .blinking-reminder {
-        animation: blinker 1s linear infinite;
-        padding: 4px 8px;
-        border-radius: 4px;
+    /* Zamanı Gelen Hatırlatma - Sabit Kırmızı Kutu Stili */
+    .red-reminder-box {
+        background-color: #fee2e2;
         border: 1.5px solid #ef4444;
+        color: #991b1b;
+        padding: 6px 10px;
+        border-radius: 6px;
         font-weight: bold;
         font-size: 0.85rem;
         margin-bottom: 4px;
+    }
+
+    /* Ana Başlık Altındaki Kırmızı Uyarı Yazısı */
+    .header-red-alert {
+        background-color: #dc2626;
+        color: #ffffff;
+        font-size: 1.1rem;
+        font-weight: bold;
+        padding: 8px 16px;
+        border-radius: 6px;
+        display: inline-block;
+        margin-top: 5px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 5px rgba(220, 38, 38, 0.3);
     }
 
     /* SADECE YÖN KAYDIRMA BUTONLARI İÇİN MİNİMAL MAVİ STİL */
@@ -117,9 +127,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
-st.title("📁 Dosya Takibi")
-st.markdown("---")
 
 # --- GITHUB BAĞLANTISI VE VERİ OKUMA ---
 GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
@@ -207,6 +214,32 @@ def verileri_kaydet(yeni_kayitlar, onemli_notlar, hatirlatmalar, bolum_sirasi, m
 
 kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi = verileri_getir()
 
+# ZAMAN KONTROLÜ VE AKTİF HATIRLATMA TESPİTİ
+turkey_tz = pytz.timezone("Europe/Istanbul")
+simdi_dt = datetime.now(turkey_tz)
+
+zamani_gelen_var = False
+for h in mevcut_hatirlatmalar:
+    h_zaman_str = h.get("Zaman", "")
+    h_tamamlandi = h.get("Tamamlandi", False)
+    if not h_tamamlandi and h_zaman_str:
+        try:
+            h_dt = turkey_tz.localize(datetime.strptime(h_zaman_str, "%Y-%m-%d %H:%M:%S"))
+            if simdi_dt >= h_dt:
+                zamani_gelen_var = True
+                break
+        except Exception:
+            pass
+
+# BAŞLIK
+st.title("📁 Dosya Takibi")
+
+# ZAMANI GELEN HATIRLATMA VARSA BAŞLIĞIN ALTINDA KIRMIZI UYARI
+if zamani_gelen_var:
+    st.markdown("<div class='header-red-alert'>🚨 HATIRLATMA VAR</div>", unsafe_allow_html=True)
+
+st.markdown("---")
+
 # TOPLAM VE DURUM SAYILARI GÖSTERGELERİ
 toplam_dosya_sayisi = len(kayitlar)
 bagli_dosya_sayisi = sum(1 for d in kayitlar if d.get("BagliDosya", False))
@@ -234,9 +267,6 @@ st.markdown("---")
 # ==============================================================================
 # DİNAMİK BÖLÜM SIRALAMA MEKANİZMASI
 # ==============================================================================
-turkey_tz = pytz.timezone("Europe/Istanbul")
-simdi_dt = datetime.now(turkey_tz)
-
 def bolum_sol_sag_kaydir(bolum_kodu, yon):
     idx = mevcut_bolum_sirasi.index(bolum_kodu)
     if yon == "sol" and idx > 0:
@@ -494,17 +524,17 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
                         h_tamamlandi = h_item.get("Tamamlandi", False)
 
                         try:
-                            h_zaman_dt = datetime.strptime(h_zaman_str, "%Y-%m-%d %H:%M:%S")
-                            h_zaman_dt = turkey_tz.localize(h_zaman_dt)
+                            h_zaman_dt = turkey_tz.localize(datetime.strptime(h_zaman_str, "%Y-%m-%d %H:%M:%S"))
                             zaman_geldi = (simdi_dt >= h_zaman_dt) and not h_tamamlandi
                         except Exception:
                             zaman_geldi = False
 
-                        c_h_text, c_h_action = st.columns([75, 25], vertical_alignment="center")
+                        c_h_text, c_h_action = st.columns([72, 28], vertical_alignment="center")
 
                         with c_h_text:
                             if zaman_geldi:
-                                st.markdown(f"<div class='blinking-reminder'>🔔 {h_metin_val}<br><small>🗓️ {h_zaman_str[11:16]}</small></div>", unsafe_allow_html=True)
+                                # Sabit kırmızı kutu
+                                st.markdown(f"<div class='red-reminder-box'>🔔 {h_metin_val}<br><small>🗓️ {h_zaman_str[11:16]}</small></div>", unsafe_allow_html=True)
                             else:
                                 gosterim_tarih = h_zaman_str[8:10] + "." + h_zaman_str[5:7] + " " + h_zaman_str[11:16]
                                 if h_tamamlandi:
@@ -514,7 +544,7 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
 
                         with c_h_action:
                             if zaman_geldi:
-                                if st.button("Tamam", key=f"btn_ok_h_{h_idx}", type="primary", help="Duraklat"):
+                                if st.button("Tamam", key=f"btn_ok_h_{h_idx}", type="primary", help="Kapat"):
                                     h_item["Tamamlandi"] = True
                                     verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, "Hatırlatma tamamlandı")
                                     st.rerun()
@@ -620,7 +650,6 @@ with col_left:
                 with exp_container:
                     st.markdown("**📌 Dosya Durumu**")
                     
-                    # Checkbox'ların ekrana rahat sığması için 4'erli 2 satıra bölündü
                     c_row1_1, c_row1_2, c_row1_3, c_row1_4 = st.columns(4)
                     with c_row1_1: ch_bagli = st.checkbox("🔗 Bağlı", value=bagli_durumu, key=f"chk_bagli_{d_no}_{d_idx}")
                     with c_row1_2: ch_red = st.checkbox("❌ Red", value=kapatma_red_durumu, key=f"chk_red_{d_no}_{d_idx}")
