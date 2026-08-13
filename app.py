@@ -13,10 +13,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Ultra Sıkılaştırılmış CSS (Dikey Boyutları 1/5 Oranında)
+# Ultra Sıkılaştırılmış CSS
 st.markdown("""
 <style>
-    /* Expander ve form elemanları dikey iç boşluklarını daraltma */
     div[data-testid="stExpander"] div[role="region"] {
         padding-top: 0.1rem !important;
         padding-bottom: 0.2rem !important;
@@ -28,8 +27,6 @@ st.markdown("""
         margin-top: 0.3rem !important;
         margin-bottom: 0.3rem !important;
     }
-    
-    /* Liste Elemanlarının Dikey Boyutlarını Küçültme */
     div[data-testid="stAlert"] {
         padding-top: 0.2rem !important;
         padding-bottom: 0.2rem !important;
@@ -82,6 +79,8 @@ FILE_PATH = st.secrets["FILE_PATH"]
 g = Github(GITHUB_TOKEN)
 repo = g.get_repo(REPO_NAME)
 
+VARSAYILAN_BOLUM_SIRASI = ["kapatma", "incelenmedi", "incelemede", "notlar", "hatirlatma"]
+
 def verileri_getir():
     try:
         file_content = repo.get_contents(FILE_PATH)
@@ -91,10 +90,12 @@ def verileri_getir():
             kayitlar_data = raw_data.get("Dosyalar", [])
             onemli_notlar_raw = raw_data.get("OnemliNotlar", [])
             hatirlatmalar_raw = raw_data.get("Hatirlatmalar", [])
+            bolum_sirasi_data = raw_data.get("BolumSirasi", VARSAYILAN_BOLUM_SIRASI)
         else:
             kayitlar_data = raw_data if isinstance(raw_data, list) else []
             onemli_notlar_raw = []
             hatirlatmalar_raw = []
+            bolum_sirasi_data = VARSAYILAN_BOLUM_SIRASI
 
         if isinstance(onemli_notlar_raw, str):
             onemli_notlar_data = [onemli_notlar_raw.strip()] if onemli_notlar_raw.strip() else []
@@ -104,6 +105,11 @@ def verileri_getir():
             onemli_notlar_data = []
 
         hatirlatmalar_data = hatirlatmalar_raw if isinstance(hatirlatmalar_raw, list) else []
+
+        # Bölüm sırası eksikse tamamla
+        for b in VARSAYILAN_BOLUM_SIRASI:
+            if b not in bolum_sirasi_data:
+                bolum_sirasi_data.append(b)
 
         yeni_format_data = []
         for item in kayitlar_data:
@@ -123,15 +129,16 @@ def verileri_getir():
             if "IncelemedeSiraNo" not in item: item["IncelemedeSiraNo"] = 9999
             yeni_format_data.append(item)
             
-        return yeni_format_data, onemli_notlar_data, hatirlatmalar_data
+        return yeni_format_data, onemli_notlar_data, hatirlatmalar_data, bolum_sirasi_data
     except Exception:
-        return [], [], []
+        return [], [], [], VARSAYILAN_BOLUM_SIRASI
 
-def verileri_kaydet(yeni_kayitlar, onemli_notlar, hatirlatmalar, mesaj):
+def verileri_kaydet(yeni_kayitlar, onemli_notlar, hatirlatmalar, bolum_sirasi, mesaj):
     kaydedilecek_veri = {
         "Dosyalar": yeni_kayitlar,
         "OnemliNotlar": onemli_notlar,
-        "Hatirlatmalar": hatirlatmalar
+        "Hatirlatmalar": hatirlatmalar,
+        "BolumSirasi": bolum_sirasi
     }
     yeni_json_icerik = json.dumps(kaydedilecek_veri, ensure_ascii=False, indent=2)
     try:
@@ -149,9 +156,9 @@ def verileri_kaydet(yeni_kayitlar, onemli_notlar, hatirlatmalar, mesaj):
             content=yeni_json_icerik
         )
 
-kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar = verileri_getir()
+kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi = verileri_getir()
 
-# TOPLAM VE DURUM SAYILARI GÖSTERGELERİ (9 SÜTUNLU)
+# TOPLAM VE DURUM SAYILARI GÖSTERGELERİ
 toplam_dosya_sayisi = len(kayitlar)
 bagli_dosya_sayisi = sum(1 for d in kayitlar if d.get("BagliDosya", False))
 kapatma_red_sayisi = sum(1 for d in kayitlar if d.get("KapatmaRed", False))
@@ -163,298 +170,324 @@ incelemede_sayisi = sum(1 for d in kayitlar if d.get("Incelemede", False))
 mail_atildi_sayisi = sum(1 for d in kayitlar if d.get("MailAtildi", False))
 
 col_m1, col_m2, col_m3, col_m4, col_m5, col_m6, col_m7, col_m8, col_m9 = st.columns(9)
-with col_m1:
-    st.metric(label="📊 Toplam", value=f"{toplam_dosya_sayisi}")
-with col_m2:
-    st.metric(label="🔗 Bağlı", value=f"{bagli_dosya_sayisi}")
-with col_m3:
-    st.metric(label="🚫 Red", value=f"{kapatma_red_sayisi}")
-with col_m4:
-    st.metric(label="⏳ Tescilde", value=f"{tescilde_bekleyen_sayisi}")
-with col_m5:
-    st.metric(label="🏁 Kapatmada", value=f"{kapatma_asamasinda_sayisi}")
-with col_m6:
-    st.metric(label="✉️ Yazı Cevabı", value=f"{yazi_cevabi_bekleyen_sayisi}")
-with col_m7:
-    st.metric(label="🔍 İncelenmedi", value=f"{incelenmedi_sayisi}")
-with col_m8:
-    st.metric(label="🧐 İncelemede", value=f"{incelemede_sayisi}")
-with col_m9:
-    st.metric(label="📧 Mail Atıldı", value=f"{mail_atildi_sayisi}")
+with col_m1: st.metric(label="📊 Toplam", value=f"{toplam_dosya_sayisi}")
+with col_m2: st.metric(label="🔗 Bağlı", value=f"{bagli_dosya_sayisi}")
+with col_m3: st.metric(label="🚫 Red", value=f"{kapatma_red_sayisi}")
+with col_m4: st.metric(label="⏳ Tescilde", value=f"{tescilde_bekleyen_sayisi}")
+with col_m5: st.metric(label="🏁 Kapatmada", value=f"{kapatma_asamasinda_sayisi}")
+with col_m6: st.metric(label="✉️ Yazı Cevabı", value=f"{yazi_cevabi_bekleyen_sayisi}")
+with col_m7: st.metric(label="🔍 İncelenmedi", value=f"{incelenmedi_sayisi}")
+with col_m8: st.metric(label="🧐 İncelemede", value=f"{incelemede_sayisi}")
+with col_m9: st.metric(label="📧 Mail Atıldı", value=f"{mail_atildi_sayisi}")
 
 st.markdown("---")
 
 # ==============================================================================
-# ÜST PANEL: KAPATMA - İNCELENMEDİ - İNCELEMEDE - NOTLAR - HATIRLATMALAR
+# DİNAMİK BÖLÜM SIRALAMA MEKANİZMASI (SOLA / SAĞA KAYDIRILABİLİR)
 # ==============================================================================
 turkey_tz = pytz.timezone("Europe/Istanbul")
 simdi_dt = datetime.now(turkey_tz)
 
-col_kapatma_panel, col_incelenmedi_panel, col_incelemede_panel, col_not, col_hatirlatma = st.columns([1.1, 1.1, 1.1, 0.9, 0.9])
+def bolum_sol_sag_kaydir(bolum_kodu, yon):
+    idx = mevcut_bolum_sirasi.index(bolum_kodu)
+    if yon == "sol" and idx > 0:
+        mevcut_bolum_sirasi[idx], mevcut_bolum_sirasi[idx - 1] = mevcut_bolum_sirasi[idx - 1], mevcut_bolum_sirasi[idx]
+    elif yon == "sag" and idx < len(mevcut_bolum_sirasi) - 1:
+        mevcut_bolum_sirasi[idx], mevcut_bolum_sirasi[idx + 1] = mevcut_bolum_sirasi[idx + 1], mevcut_bolum_sirasi[idx]
+    verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{bolum_kodu} bölümü {yon}a kaydırıldı")
+    st.rerun()
 
-# --- 1. BÖLÜM: KAPATMA AŞAMASINDA OLAN DOSYALAR ---
-with col_kapatma_panel:
-    st.subheader("🏁 Kapatmada")
-    
-    kapatmada_dosyalar = [d for d in kayitlar if d.get("KapatmaAsamasinda", False)]
-    kapatmada_dosyalar = sorted(kapatmada_dosyalar, key=lambda x: x.get("SiraNo", 9999))
-    
-    with st.container(height=280):
-        if kapatmada_dosyalar:
-            for k_idx, k_dosya in enumerate(kapatmada_dosyalar):
-                k_dno = k_dosya.get("Dosya No", "")
-                k_firma = k_dosya.get("Firma", "-")
-                
-                c_k_txt, c_k_up, c_k_down = st.columns([72, 14, 14], vertical_alignment="center")
-                
-                with c_k_txt:
-                    st.markdown(f"**{k_idx + 1}.** `{k_dno}` | <small>{k_firma}</small>", unsafe_allow_html=True)
-                
-                with c_k_up:
-                    if st.button("⬆️", key=f"btn_kp_up_{k_dno}_{k_idx}", help="Yukarı Taş"):
-                        if k_idx > 0:
-                            ust_dosya = kapatmada_dosyalar[k_idx - 1]
-                            curr_sira = k_dosya.get("SiraNo", k_idx)
-                            ust_sira = ust_dosya.get("SiraNo", k_idx - 1)
-                            
-                            k_dosya["SiraNo"] = ust_sira if ust_sira != curr_sira else k_idx - 1
-                            ust_dosya["SiraNo"] = curr_sira if ust_sira != curr_sira else k_idx
-                        else:
-                            k_dosya["SiraNo"] = -1
-                            
-                        for idx, d in enumerate(sorted(kapatmada_dosyalar, key=lambda x: x.get("SiraNo", 9999))):
-                            d["SiraNo"] = idx
-                            
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{k_dno} kapatma sırasında yukarı taşındı")
-                        st.rerun()
+# 5 Dinamik Sütun Tanımlama
+genislik_haritasi = {
+    "kapatma": 1.1,
+    "incelenmedi": 1.1,
+    "incelemede": 1.1,
+    "notlar": 0.9,
+    "hatirlatma": 0.9
+}
+sutun_genislikleri = [genislik_haritasi[b] for b in mevcut_bolum_sirasi]
+top_cols = st.columns(sutun_genislikleri)
 
-                with c_k_down:
-                    if st.button("⬇️", key=f"btn_kp_dn_{k_dno}_{k_idx}", help="Aşağı Taş"):
-                        if k_idx < len(kapatmada_dosyalar) - 1:
-                            alt_dosya = kapatmada_dosyalar[k_idx + 1]
-                            curr_sira = k_dosya.get("SiraNo", k_idx)
-                            alt_sira = alt_dosya.get("SiraNo", k_idx + 1)
-                            
-                            k_dosya["SiraNo"] = alt_sira if alt_sira != curr_sira else k_idx + 1
-                            alt_dosya["SiraNo"] = curr_sira if alt_sira != curr_sira else k_idx
-                            
-                            for idx, d in enumerate(sorted(kapatmada_dosyalar, key=lambda x: x.get("SiraNo", 9999))):
-                                d["SiraNo"] = idx
-                                
-                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{k_dno} kapatma sırasında aşağı taşındı")
-                            st.rerun()
-        else:
-            st.caption("*Kapatma aşamasında dosya yok.*")
-
-# --- 2. BÖLÜM: İNCELENMEDİ DOSYALAR ---
-with col_incelenmedi_panel:
-    st.subheader("🔍 İncelenmedi")
+for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
+    target_col = top_cols[col_idx]
     
-    incelenmedi_dosyalar = [d for d in kayitlar if d.get("Incelenmedi", False)]
-    incelenmedi_dosyalar = sorted(incelenmedi_dosyalar, key=lambda x: x.get("IncelenmediSiraNo", 9999))
-    
-    with st.container(height=280):
-        if incelenmedi_dosyalar:
-            for i_idx, i_dosya in enumerate(incelenmedi_dosyalar):
-                i_dno = i_dosya.get("Dosya No", "")
-                i_firma = i_dosya.get("Firma", "-")
-                
-                c_i_txt, c_i_up, c_i_down = st.columns([72, 14, 14], vertical_alignment="center")
-                
-                with c_i_txt:
-                    st.markdown(f"**{i_idx + 1}.** `{i_dno}` | <small>{i_firma}</small>", unsafe_allow_html=True)
-                
-                with c_i_up:
-                    if st.button("⬆️", key=f"btn_inc_up_{i_dno}_{i_idx}", help="Yukarı Taş"):
-                        if i_idx > 0:
-                            ust_dosya = incelenmedi_dosyalar[i_idx - 1]
-                            curr_sira = i_dosya.get("IncelenmediSiraNo", i_idx)
-                            ust_sira = ust_dosya.get("IncelenmediSiraNo", i_idx - 1)
-                            
-                            i_dosya["IncelenmediSiraNo"] = ust_sira if ust_sira != curr_sira else i_idx - 1
-                            ust_dosya["IncelenmediSiraNo"] = curr_sira if ust_sira != curr_sira else i_idx
-                        else:
-                            i_dosya["IncelenmediSiraNo"] = -1
-                            
-                        for idx, d in enumerate(sorted(incelenmedi_dosyalar, key=lambda x: x.get("IncelenmediSiraNo", 9999))):
-                            d["IncelenmediSiraNo"] = idx
-                            
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{i_dno} incelenmedi sırasında yukarı taşındı")
-                        st.rerun()
+    with target_col:
+        # BAŞLIK VE SOL/SAĞ KAYDIRMA BUTONLARI
+        c_head_txt, c_head_left, c_head_right = st.columns([70, 15, 15], vertical_alignment="center")
+        
+        with c_head_left:
+            if col_idx > 0:
+                if st.button("◀️", key=f"btn_m_left_{bolum_kodu}", help="Bölümü Sola Kaydır"):
+                    bolum_sol_sag_kaydir(bolum_kodu, "sol")
+                    
+        with c_head_right:
+            if col_idx < len(mevcut_bolum_sirasi) - 1:
+                if st.button("▶️", key=f"btn_m_right_{bolum_kodu}", help="Bölümü Sağa Kaydır"):
+                    bolum_sol_sag_kaydir(bolum_kodu, "sag")
 
-                with c_i_down:
-                    if st.button("⬇️", key=f"btn_inc_dn_{i_dno}_{i_idx}", help="Aşağı Taş"):
-                        if i_idx < len(incelenmedi_dosyalar) - 1:
-                            alt_dosya = incelenmedi_dosyalar[i_idx + 1]
-                            curr_sira = i_dosya.get("IncelenmediSiraNo", i_idx)
-                            alt_sira = alt_dosya.get("IncelenmediSiraNo", i_idx + 1)
-                            
-                            i_dosya["IncelenmediSiraNo"] = alt_sira if alt_sira != curr_sira else i_idx + 1
-                            alt_dosya["IncelenmediSiraNo"] = curr_sira if alt_sira != curr_sira else i_idx
-                            
-                            for idx, d in enumerate(sorted(incelenmedi_dosyalar, key=lambda x: x.get("IncelenmediSiraNo", 9999))):
-                                d["IncelenmediSiraNo"] = idx
-                                
-                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{i_dno} incelenmedi sırasında aşağı taşındı")
-                            st.rerun()
-        else:
-            st.caption("*İncelenmedi işaretli dosya yok.*")
-
-# --- 3. BÖLÜM: İNCELEMEDE DOSYALAR ---
-with col_incelemede_panel:
-    st.subheader("🧐 İncelemede")
-    
-    incelemede_dosyalar = [d for d in kayitlar if d.get("Incelemede", False)]
-    incelemede_dosyalar = sorted(incelemede_dosyalar, key=lambda x: x.get("IncelemedeSiraNo", 9999))
-    
-    with st.container(height=280):
-        if incelemede_dosyalar:
-            for m_idx, m_dosya in enumerate(incelemede_dosyalar):
-                m_dno = m_dosya.get("Dosya No", "")
-                m_firma = m_dosya.get("Firma", "-")
-                
-                c_m_txt, c_m_up, c_m_down = st.columns([72, 14, 14], vertical_alignment="center")
-                
-                with c_m_txt:
-                    st.markdown(f"**{m_idx + 1}.** `{m_dno}` | <small>{m_firma}</small>", unsafe_allow_html=True)
-                
-                with c_m_up:
-                    if st.button("⬆️", key=f"btn_incmd_up_{m_dno}_{m_idx}", help="Yukarı Taş"):
-                        if m_idx > 0:
-                            ust_dosya = incelemede_dosyalar[m_idx - 1]
-                            curr_sira = m_dosya.get("IncelemedeSiraNo", m_idx)
-                            ust_sira = ust_dosya.get("IncelemedeSiraNo", m_idx - 1)
-                            
-                            m_dosya["IncelemedeSiraNo"] = ust_sira if ust_sira != curr_sira else m_idx - 1
-                            ust_dosya["IncelemedeSiraNo"] = curr_sira if ust_sira != curr_sira else m_idx
-                        else:
-                            m_dosya["IncelemedeSiraNo"] = -1
-                            
-                        for idx, d in enumerate(sorted(incelemede_dosyalar, key=lambda x: x.get("IncelemedeSiraNo", 9999))):
-                            d["IncelemedeSiraNo"] = idx
-                            
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{m_dno} incelemede sırasında yukarı taşındı")
-                        st.rerun()
-
-                with c_m_down:
-                    if st.button("⬇️", key=f"btn_incmd_dn_{m_dno}_{m_idx}", help="Aşağı Taş"):
-                        if m_idx < len(incelemede_dosyalar) - 1:
-                            alt_dosya = incelemede_dosyalar[m_idx + 1]
-                            curr_sira = m_dosya.get("IncelemedeSiraNo", m_idx)
-                            alt_sira = alt_dosya.get("IncelemedeSiraNo", m_idx + 1)
-                            
-                            m_dosya["IncelemedeSiraNo"] = alt_sira if alt_sira != curr_sira else m_idx + 1
-                            alt_dosya["IncelemedeSiraNo"] = curr_sira if alt_sira != curr_sira else m_idx
-                            
-                            for idx, d in enumerate(sorted(incelemede_dosyalar, key=lambda x: x.get("IncelemedeSiraNo", 9999))):
-                                d["IncelemedeSiraNo"] = idx
-                                
-                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{m_dno} incelemede sırasında aşağı taşındı")
-                            st.rerun()
-        else:
-            st.caption("*İncelemede işaretli dosya yok.*")
-
-# --- 4. BÖLÜM: ÖNEMLİ NOTLAR ---
-with col_not:
-    st.subheader("📌 Önemli Notlar")
-    
-    with st.form(key="form_yeni_not_ekle", clear_on_submit=True):
-        yeni_not_metni = st.text_input("Yeni Not", placeholder="Not yazınız...", label_visibility="collapsed")
-        submit_not = st.form_submit_button("➕ Ekle", use_container_width=True)
+        # ----------------------------------------------------------------------
+        # 1. KAPATMA AŞAMASINDA
+        # ----------------------------------------------------------------------
+        if bolum_kodu == "kapatma":
+            with c_head_txt:
+                st.subheader("🏁 Kapatmada")
             
-        if submit_not:
-            if yeni_not_metni.strip() != "":
-                mevcut_onemli_notlar.append(yeni_not_metni.strip())
-                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, "Yeni önemli not eklendi")
-                st.toast("✅ Not eklendi!")
-                st.rerun()
-            else:
-                st.warning("Not boş olamaz.")
-
-    with st.container(height=200):
-        if mevcut_onemli_notlar:
-            for n_idx, not_item in enumerate(mevcut_onemli_notlar):
-                c_not_text, c_not_del = st.columns([82, 18], vertical_alignment="center")
-                with c_not_text:
-                    st.info(f"📌 {not_item}")
-                with c_not_del:
-                    if st.button("🗑️", key=f"btn_del_not_{n_idx}", help="Bu notu sil"):
-                        mevcut_onemli_notlar.pop(n_idx)
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, "Önemli not silindi")
-                        st.toast("Not silindi!")
-                        st.rerun()
-        else:
-            st.caption("*Henüz kayıtlı not yok.*")
-
-# --- 5. BÖLÜM: HATIRLATMA LİSTESİ VE DİJİTAL SAAT ---
-with col_hatirlatma:
-    saat_str = simdi_dt.strftime("%d.%m.%Y | %H:%M:%S")
-    st.markdown(f"<div class='digital-clock'>🕒 {saat_str}</div>", unsafe_allow_html=True)
-    st.subheader("⏰ Hatırlatmalar")
-
-    with st.form(key="form_yeni_hatirlatma_ekle", clear_on_submit=True):
-        h_metin = st.text_input("Hatırlatma Metni", placeholder="Hatırlatma...", label_visibility="collapsed")
-        col_hd, col_ht = st.columns(2)
-        with col_hd:
-            h_tarih = st.date_input("Tarih", value=simdi_dt.date())
-        with col_ht:
-            h_saat = st.time_input("Saat", value=simdi_dt.time())
+            kapatmada_dosyalar = [d for d in kayitlar if d.get("KapatmaAsamasinda", False)]
+            kapatmada_dosyalar = sorted(kapatmada_dosyalar, key=lambda x: x.get("SiraNo", 9999))
             
-        submit_hatirlatma = st.form_submit_button("➕ Ekle", use_container_width=True)
+            with st.container(height=280):
+                if kapatmada_dosyalar:
+                    for k_idx, k_dosya in enumerate(kapatmada_dosyalar):
+                        k_dno = k_dosya.get("Dosya No", "")
+                        k_firma = k_dosya.get("Firma", "-")
+                        
+                        c_k_txt, c_k_up, c_k_down = st.columns([72, 14, 14], vertical_alignment="center")
+                        with c_k_txt:
+                            st.markdown(f"**{k_idx + 1}.** `{k_dno}` | <small>{k_firma}</small>", unsafe_allow_html=True)
+                        
+                        with c_k_up:
+                            if st.button("⬆️", key=f"btn_kp_up_{k_dno}_{k_idx}", help="Yukarı Taş"):
+                                if k_idx > 0:
+                                    ust_dosya = kapatmada_dosyalar[k_idx - 1]
+                                    curr_sira = k_dosya.get("SiraNo", k_idx)
+                                    ust_sira = ust_dosya.get("SiraNo", k_idx - 1)
+                                    k_dosya["SiraNo"] = ust_sira if ust_sira != curr_sira else k_idx - 1
+                                    ust_dosya["SiraNo"] = curr_sira if ust_sira != curr_sira else k_idx
+                                else:
+                                    k_dosya["SiraNo"] = -1
+                                    
+                                for idx, d in enumerate(sorted(kapatmada_dosyalar, key=lambda x: x.get("SiraNo", 9999))):
+                                    d["SiraNo"] = idx
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{k_dno} kapatma yukarı")
+                                st.rerun()
 
-        if submit_hatirlatma:
-            if h_metin.strip() != "":
-                hedef_zaman_str = datetime.combine(h_tarih, h_saat).strftime("%Y-%m-%d %H:%M:%S")
-                mevcut_hatirlatmalar.append({
-                    "Metin": h_metin.strip(),
-                    "Zaman": hedef_zaman_str,
-                    "Tamamlandi": False
-                })
-                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, "Yeni hatırlatma eklendi")
-                st.toast("✅ Hatırlatma eklendi!")
-                st.rerun()
-            else:
-                st.warning("Hatırlatma metni boş olamaz.")
+                        with c_k_down:
+                            if st.button("⬇️", key=f"btn_kp_dn_{k_dno}_{k_idx}", help="Aşağı Taş"):
+                                if k_idx < len(kapatmada_dosyalar) - 1:
+                                    alt_dosya = kapatmada_dosyalar[k_idx + 1]
+                                    curr_sira = k_dosya.get("SiraNo", k_idx)
+                                    alt_sira = alt_dosya.get("SiraNo", k_idx + 1)
+                                    k_dosya["SiraNo"] = alt_sira if alt_sira != curr_sira else k_idx + 1
+                                    alt_dosya["SiraNo"] = curr_sira if alt_sira != curr_sira else k_idx
+                                    
+                                for idx, d in enumerate(sorted(kapatmada_dosyalar, key=lambda x: x.get("SiraNo", 9999))):
+                                    d["SiraNo"] = idx
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{k_dno} kapatma aşağı")
+                                st.rerun()
+                else:
+                    st.caption("*Kapatma aşamasında dosya yok.*")
 
-    with st.container(height=180):
-        if mevcut_hatirlatmalar:
-            for h_idx, h_item in enumerate(mevcut_hatirlatmalar):
-                h_metin_val = h_item.get("Metin", "")
-                h_zaman_str = h_item.get("Zaman", "")
-                h_tamamlandi = h_item.get("Tamamlandi", False)
+        # ----------------------------------------------------------------------
+        # 2. İNCELENMEDİ
+        # ----------------------------------------------------------------------
+        elif bolum_kodu == "incelenmedi":
+            with c_head_txt:
+                st.subheader("🔍 İncelenmedi")
+            
+            incelenmedi_dosyalar = [d for d in kayitlar if d.get("Incelenmedi", False)]
+            incelenmedi_dosyalar = sorted(incelenmedi_dosyalar, key=lambda x: x.get("IncelenmediSiraNo", 9999))
+            
+            with st.container(height=280):
+                if incelenmedi_dosyalar:
+                    for i_idx, i_dosya in enumerate(incelenmedi_dosyalar):
+                        i_dno = i_dosya.get("Dosya No", "")
+                        i_firma = i_dosya.get("Firma", "-")
+                        
+                        c_i_txt, c_i_up, c_i_down = st.columns([72, 14, 14], vertical_alignment="center")
+                        with c_i_txt:
+                            st.markdown(f"**{i_idx + 1}.** `{i_dno}` | <small>{i_firma}</small>", unsafe_allow_html=True)
+                        
+                        with c_i_up:
+                            if st.button("⬆️", key=f"btn_inc_up_{i_dno}_{i_idx}", help="Yukarı Taş"):
+                                if i_idx > 0:
+                                    ust_dosya = incelenmedi_dosyalar[i_idx - 1]
+                                    curr_sira = i_dosya.get("IncelenmediSiraNo", i_idx)
+                                    ust_sira = ust_dosya.get("IncelenmediSiraNo", i_idx - 1)
+                                    i_dosya["IncelenmediSiraNo"] = ust_sira if ust_sira != curr_sira else i_idx - 1
+                                    ust_dosya["IncelenmediSiraNo"] = curr_sira if ust_sira != curr_sira else i_idx
+                                else:
+                                    i_dosya["IncelenmediSiraNo"] = -1
+                                    
+                                for idx, d in enumerate(sorted(incelenmedi_dosyalar, key=lambda x: x.get("IncelenmediSiraNo", 9999))):
+                                    d["IncelenmediSiraNo"] = idx
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{i_dno} incelenmedi yukarı")
+                                st.rerun()
 
-                try:
-                    h_zaman_dt = datetime.strptime(h_zaman_str, "%Y-%m-%d %H:%M:%S")
-                    h_zaman_dt = turkey_tz.localize(h_zaman_dt)
-                    zaman_geldi = (simdi_dt >= h_zaman_dt) and not h_tamamlandi
-                except Exception:
-                    zaman_geldi = False
+                        with c_i_down:
+                            if st.button("⬇️", key=f"btn_inc_dn_{i_dno}_{i_idx}", help="Aşağı Taş"):
+                                if i_idx < len(incelenmedi_dosyalar) - 1:
+                                    alt_dosya = incelenmedi_dosyalar[i_idx + 1]
+                                    curr_sira = i_dosya.get("IncelenmediSiraNo", i_idx)
+                                    alt_sira = alt_dosya.get("IncelenmediSiraNo", i_idx + 1)
+                                    i_dosya["IncelenmediSiraNo"] = alt_sira if alt_sira != curr_sira else i_idx + 1
+                                    alt_dosya["IncelenmediSiraNo"] = curr_sira if alt_sira != curr_sira else i_idx
+                                    
+                                for idx, d in enumerate(sorted(incelenmedi_dosyalar, key=lambda x: x.get("IncelenmediSiraNo", 9999))):
+                                    d["IncelenmediSiraNo"] = idx
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{i_dno} incelenmedi aşağı")
+                                st.rerun()
+                else:
+                    st.caption("*İncelenmedi işaretli dosya yok.*")
 
-                c_h_text, c_h_action = st.columns([75, 25], vertical_alignment="center")
+        # ----------------------------------------------------------------------
+        # 3. İNCELEMEDE
+        # ----------------------------------------------------------------------
+        elif bolum_kodu == "incelemede":
+            with c_head_txt:
+                st.subheader("🧐 İncelemede")
+            
+            incelemede_dosyalar = [d for d in kayitlar if d.get("Incelemede", False)]
+            incelemede_dosyalar = sorted(incelemede_dosyalar, key=lambda x: x.get("IncelemedeSiraNo", 9999))
+            
+            with st.container(height=280):
+                if incelemede_dosyalar:
+                    for m_idx, m_dosya in enumerate(incelemede_dosyalar):
+                        m_dno = m_dosya.get("Dosya No", "")
+                        m_firma = m_dosya.get("Firma", "-")
+                        
+                        c_m_txt, c_m_up, c_m_down = st.columns([72, 14, 14], vertical_alignment="center")
+                        with c_m_txt:
+                            st.markdown(f"**{m_idx + 1}.** `{m_dno}` | <small>{m_firma}</small>", unsafe_allow_html=True)
+                        
+                        with c_m_up:
+                            if st.button("⬆️", key=f"btn_incmd_up_{m_dno}_{m_idx}", help="Yukarı Taş"):
+                                if m_idx > 0:
+                                    ust_dosya = incelemede_dosyalar[m_idx - 1]
+                                    curr_sira = m_dosya.get("IncelemedeSiraNo", m_idx)
+                                    ust_sira = ust_dosya.get("IncelemedeSiraNo", m_idx - 1)
+                                    m_dosya["IncelemedeSiraNo"] = ust_sira if ust_sira != curr_sira else m_idx - 1
+                                    ust_dosya["IncelemedeSiraNo"] = curr_sira if ust_sira != curr_sira else m_idx
+                                else:
+                                    m_dosya["IncelemedeSiraNo"] = -1
+                                    
+                                for idx, d in enumerate(sorted(incelemede_dosyalar, key=lambda x: x.get("IncelemedeSiraNo", 9999))):
+                                    d["IncelemedeSiraNo"] = idx
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{m_dno} incelemede yukarı")
+                                st.rerun()
 
-                with c_h_text:
-                    if zaman_geldi:
-                        st.markdown(f"<div class='blinking-reminder'>🔔 {h_metin_val}<br><small>🗓️ {h_zaman_str[11:16]}</small></div>", unsafe_allow_html=True)
+                        with c_m_down:
+                            if st.button("⬇️", key=f"btn_incmd_dn_{m_dno}_{m_idx}", help="Aşağı Taş"):
+                                if m_idx < len(incelemede_dosyalar) - 1:
+                                    alt_dosya = incelemede_dosyalar[m_idx + 1]
+                                    curr_sira = m_dosya.get("IncelemedeSiraNo", m_idx)
+                                    alt_sira = alt_dosya.get("IncelemedeSiraNo", m_idx + 1)
+                                    m_dosya["IncelemedeSiraNo"] = alt_sira if alt_sira != curr_sira else m_idx + 1
+                                    alt_dosya["IncelemedeSiraNo"] = curr_sira if alt_sira != curr_sira else m_idx
+                                    
+                                for idx, d in enumerate(sorted(incelemede_dosyalar, key=lambda x: x.get("IncelemedeSiraNo", 9999))):
+                                    d["IncelemedeSiraNo"] = idx
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{m_dno} incelemede aşağı")
+                                st.rerun()
+                else:
+                    st.caption("*İncelemede işaretli dosya yok.*")
+
+        # ----------------------------------------------------------------------
+        # 4. ÖNEMLİ NOTLAR
+        # ----------------------------------------------------------------------
+        elif bolum_kodu == "notlar":
+            with c_head_txt:
+                st.subheader("📌 Önemli Notlar")
+            
+            with st.form(key="form_yeni_not_ekle", clear_on_submit=True):
+                yeni_not_metni = st.text_input("Yeni Not", placeholder="Not yazınız...", label_visibility="collapsed")
+                submit_not = st.form_submit_button("➕ Ekle", use_container_width=True)
+                    
+                if submit_not:
+                    if yeni_not_metni.strip() != "":
+                        mevcut_onemli_notlar.append(yeni_not_metni.strip())
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, "Yeni önemli not eklendi")
+                        st.toast("✅ Not eklendi!")
+                        st.rerun()
                     else:
-                        gosterim_tarih = h_zaman_str[8:10] + "." + h_zaman_str[5:7] + " " + h_zaman_str[11:16]
-                        if h_tamamlandi:
-                            st.caption(f"✅ ~~{h_metin_val}~~")
-                        else:
-                            st.warning(f"⏰ {h_metin_val} ({gosterim_tarih})")
+                        st.warning("Not boş olamaz.")
 
-                with c_h_action:
-                    if zaman_geldi:
-                        if st.button("Tamam", key=f"btn_ok_h_{h_idx}", type="primary", help="Duraklat"):
-                            h_item["Tamamlandi"] = True
-                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, "Hatırlatma tamamlandı")
-                            st.rerun()
+            with st.container(height=200):
+                if mevcut_onemli_notlar:
+                    for n_idx, not_item in enumerate(mevcut_onemli_notlar):
+                        c_not_text, c_not_del = st.columns([82, 18], vertical_alignment="center")
+                        with c_not_text:
+                            st.info(f"📌 {not_item}")
+                        with c_not_del:
+                            if st.button("🗑️", key=f"btn_del_not_{n_idx}", help="Bu notu sil"):
+                                mevcut_onemli_notlar.pop(n_idx)
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, "Önemli not silindi")
+                                st.toast("Not silindi!")
+                                st.rerun()
+                else:
+                    st.caption("*Henüz kayıtlı not yok.*")
+
+        # ----------------------------------------------------------------------
+        # 5. HATIRLATMALAR
+        # ----------------------------------------------------------------------
+        elif bolum_kodu == "hatirlatma":
+            saat_str = simdi_dt.strftime("%d.%m.%Y | %H:%M:%S")
+            st.markdown(f"<div class='digital-clock'>🕒 {saat_str}</div>", unsafe_allow_html=True)
+            with c_head_txt:
+                st.subheader("⏰ Hatırlatmalar")
+
+            with st.form(key="form_yeni_hatirlatma_ekle", clear_on_submit=True):
+                h_metin = st.text_input("Hatırlatma Metni", placeholder="Hatırlatma...", label_visibility="collapsed")
+                col_hd, col_ht = st.columns(2)
+                with col_hd:
+                    h_tarih = st.date_input("Tarih", value=simdi_dt.date())
+                with col_ht:
+                    h_saat = st.time_input("Saat", value=simdi_dt.time())
+                    
+                submit_hatirlatma = st.form_submit_button("➕ Ekle", use_container_width=True)
+
+                if submit_hatirlatma:
+                    if h_metin.strip() != "":
+                        hedef_zaman_str = datetime.combine(h_tarih, h_saat).strftime("%Y-%m-%d %H:%M:%S")
+                        mevcut_hatirlatmalar.append({
+                            "Metin": h_metin.strip(),
+                            "Zaman": hedef_zaman_str,
+                            "Tamamlandi": False
+                        })
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, "Yeni hatırlatma eklendi")
+                        st.toast("✅ Hatırlatma eklendi!")
+                        st.rerun()
                     else:
-                        if st.button("🗑️", key=f"btn_del_h_{h_idx}", help="Sil"):
-                            mevcut_hatirlatmalar.pop(h_idx)
-                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, "Hatırlatma silindi")
-                            st.rerun()
-        else:
-            st.caption("*Henüz kayıtlı hatırlatma yok.*")
+                        st.warning("Hatırlatma metni boş olamaz.")
+
+            with st.container(height=180):
+                if mevcut_hatirlatmalar:
+                    for h_idx, h_item in enumerate(mevcut_hatirlatmalar):
+                        h_metin_val = h_item.get("Metin", "")
+                        h_zaman_str = h_item.get("Zaman", "")
+                        h_tamamlandi = h_item.get("Tamamlandi", False)
+
+                        try:
+                            h_zaman_dt = datetime.strptime(h_zaman_str, "%Y-%m-%d %H:%M:%S")
+                            h_zaman_dt = turkey_tz.localize(h_zaman_dt)
+                            zaman_geldi = (simdi_dt >= h_zaman_dt) and not h_tamamlandi
+                        except Exception:
+                            zaman_geldi = False
+
+                        c_h_text, c_h_action = st.columns([75, 25], vertical_alignment="center")
+
+                        with c_h_text:
+                            if zaman_geldi:
+                                st.markdown(f"<div class='blinking-reminder'>🔔 {h_metin_val}<br><small>🗓️ {h_zaman_str[11:16]}</small></div>", unsafe_allow_html=True)
+                            else:
+                                gosterim_tarih = h_zaman_str[8:10] + "." + h_zaman_str[5:7] + " " + h_zaman_str[11:16]
+                                if h_tamamlandi:
+                                    st.caption(f"✅ ~~{h_metin_val}~~")
+                                else:
+                                    st.warning(f"⏰ {h_metin_val} ({gosterim_tarih})")
+
+                        with c_h_action:
+                            if zaman_geldi:
+                                if st.button("Tamam", key=f"btn_ok_h_{h_idx}", type="primary", help="Duraklat"):
+                                    h_item["Tamamlandi"] = True
+                                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, "Hatırlatma tamamlandı")
+                                    st.rerun()
+                            else:
+                                if st.button("🗑️", key=f"btn_del_h_{h_idx}", help="Sil"):
+                                    mevcut_hatirlatmalar.pop(h_idx)
+                                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, "Hatırlatma silindi")
+                                    st.rerun()
+                else:
+                    st.caption("*Henüz kayıtlı hatırlatma yok.*")
 
 st.markdown("---")
 
@@ -538,7 +571,7 @@ with col_left:
                         with c_s_evet:
                             if st.button("✅", key=f"yes_del_{d_no}_{d_idx}", help="Evet, sil"):
                                 kayitlar.remove(dosya)
-                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{d_no} nolu dosya silindi")
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} nolu dosya silindi")
                                 st.session_state[confirm_del_key] = False
                                 st.success(f"'{d_no}' silindi!")
                                 st.rerun()
@@ -595,7 +628,7 @@ with col_left:
                             dosya["MailAtildi"] = ch_mail
                             dosya["MailTarihi"] = guncel_mail_tarihi.strip() if ch_mail else ""
                             
-                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{d_no} dosya durumu güncellendi")
+                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} dosya durumu güncellendi")
                             st.toast(f"✅ '{d_no}' dosyasının durumu başarıyla kaydedildi!")
                             st.rerun()
 
@@ -626,7 +659,7 @@ with col_left:
                                 
                             if submit_aciklama:
                                 dosya["Aciklama"] = yeni_aciklama_val.strip()
-                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{d_no} dosyasının durum detayı güncellendi")
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} dosyasının durum detayı güncellendi")
                                 st.session_state[edit_key] = False
                                 st.toast("✅ Durum detayı güncellendi!")
                                 st.rerun()
@@ -654,7 +687,7 @@ with col_left:
                                     "Tarih": simdi
                                 })
                                 
-                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{d_no} dosyasına yeni işlem eklendi")
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} dosyasına yeni işlem eklendi")
                                 st.toast("✅ İşlem başarıyla eklendi!")
                                 st.rerun()
                             else:
@@ -674,7 +707,7 @@ with col_left:
                             with c_del:
                                 if st.button("🗑️ Sil", key=f"del_main_{d_no}_{i_idx}", help="Bu işlemi sil"):
                                     islemler.pop(i_idx)
-                                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{d_no} dosyasından işlem silindi")
+                                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} dosyasından işlem silindi")
                                     st.toast("Silindi!")
                                     st.rerun()
                     else:
@@ -738,7 +771,7 @@ with col_right:
                         mevcut["Incelemede"] = incelemede_input
                         mevcut["MailAtildi"] = mail_atildi_input
                         mevcut["MailTarihi"] = mail_tarihi_input.strip() if mail_atildi_input else ""
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{clean_dosya} dosyasının bilgileri güncellendi")
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{clean_dosya} dosyasının bilgileri güncellendi")
                         st.toast(f"✅ '{clean_dosya}' güncellendi!")
                     else:
                         yeni_dosya = {
@@ -761,7 +794,7 @@ with col_right:
                             "Islemler": []
                         }
                         kayitlar.append(yeni_dosya)
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"Yeni dosya eklendi: {clean_dosya}")
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"Yeni dosya eklendi: {clean_dosya}")
                         st.toast(f"✅ '{clean_dosya}' oluşturuldu!")
                     st.rerun()
                 else:
@@ -821,7 +854,7 @@ with col_right:
                                 eklenen_sayi += 1
                                 
                     if eklenen_sayi > 0:
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"Excel'den {eklenen_sayi} adet kayıt eklendi")
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"Excel'den {eklenen_sayi} adet kayıt eklendi")
                         st.toast(f"✅ Toplam {eklenen_sayi} adet dosya kaydı işlendi!")
                         st.rerun()
                     else:
@@ -894,7 +927,7 @@ with col_right:
         
         with col_evet:
             if st.button("✅ Evet, Tümünü Sil", type="primary", use_container_width=True):
-                verileri_kaydet([], [], [], "Tüm dosyalar veritabanından silindi")
+                verileri_kaydet([], [], [], VARSAYILAN_BOLUM_SIRASI, "Tüm dosyalar veritabanından silindi")
                 st.session_state.confirm_delete_all = False
                 if "rapor_cikti" in st.session_state:
                     st.session_state["rapor_cikti"] = ""
