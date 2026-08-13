@@ -54,7 +54,6 @@ def verileri_getir():
             kayitlar_data = raw_data if isinstance(raw_data, list) else []
             onemli_notlar_raw = []
 
-        # Eski metin formatındaki notları listeye dönüştürme kontrolü
         if isinstance(onemli_notlar_raw, str):
             if onemli_notlar_raw.strip():
                 onemli_notlar_data = [onemli_notlar_raw.strip()]
@@ -147,33 +146,32 @@ with col_m8:
 st.markdown("---")
 
 # ==============================================================================
-# ÖNEMLİ NOTLAR BÖLÜMÜ (ÇOKLU NOT EKLEME VE SAĞDA SİL BUTONU)
+# ÖNEMLİ NOTLAR BÖLÜMÜ (SAYFANIN 1/5 ORANINDA KISALTILMIŞ ALANI)
 # ==============================================================================
-with st.container():
+col_not_area, _ = st.columns([1, 4])
+
+with col_not_area:
     st.subheader("📌 Önemli Notlar")
     
     # 1. YENİ NOT EKLEME FORMU
     with st.form(key="form_yeni_not_ekle", clear_on_submit=True):
-        c_not_inp, c_not_btn = st.columns([5, 1], vertical_alignment="center")
-        with c_not_inp:
-            yeni_not_metni = st.text_input("Yeni Not", placeholder="Eklenecek notu buraya yazınız...", label_visibility="collapsed")
-        with c_not_btn:
-            submit_not = st.form_submit_button("➕ Yeni Not Ekle", use_container_width=True)
+        yeni_not_metni = st.text_input("Yeni Not", placeholder="Not yazınız...", label_visibility="collapsed")
+        submit_not = st.form_submit_button("➕ Ekle", use_container_width=True)
             
         if submit_not:
             if yeni_not_metni.strip() != "":
                 mevcut_onemli_notlar.append(yeni_not_metni.strip())
                 verileri_kaydet(kayitlar, mevcut_onemli_notlar, "Yeni önemli not eklendi")
-                st.toast("✅ Yeni not başarıyla eklendi!")
+                st.toast("✅ Not eklendi!")
                 st.rerun()
             else:
-                st.warning("Not alanı boş olamaz.")
+                st.warning("Not boş olamaz.")
 
     # 2. EKLENMİŞ NOTLARIN LİSTELENMESİ VE SAĞINDA SİL BUTONU
     if mevcut_onemli_notlar:
         st.write("")
         for n_idx, not_item in enumerate(mevcut_onemli_notlar):
-            c_not_text, c_not_del = st.columns([95, 5], vertical_alignment="center")
+            c_not_text, c_not_del = st.columns([82, 18], vertical_alignment="center")
             with c_not_text:
                 st.info(f"📌 {not_item}")
             with c_not_del:
@@ -183,7 +181,7 @@ with st.container():
                     st.toast("Not silindi!")
                     st.rerun()
     else:
-        st.caption("*Henüz eklenmiş bir önemli not bulunmuyor.*")
+        st.caption("*Henüz kayıtlı not yok.*")
 
 st.markdown("---")
 
@@ -249,14 +247,12 @@ with col_left:
                     else:
                         mail_baslik_eki = " 📧 (mail atıldı)"
 
-                # BAŞLIK ALANINI YATAYDA 1/3 DARALTALIM ([60, 40] DÜZENİ)
                 col_exp, _space, col_dosya_sil = st.columns([60, 33, 7], vertical_alignment="center")
                 
                 with col_exp:
                     exp_header = f"📂 **Dosya No:** {d_no}\n\n🏢 **Firma:** {firma} {simgeler}({len(islemler)} İşlem){mail_baslik_eki}"
                     exp_container = st.expander(exp_header, expanded=False)
                 
-                # KÜÇÜK SİL BUTONU VE EMİN MİSİNİZ ONAYI
                 with col_dosya_sil:
                     if not st.session_state[confirm_del_key]:
                         if st.button("🗑️", key=f"del_dosya_btn_{d_no}_{d_idx}", help="Dosyayı Sil"):
@@ -278,7 +274,6 @@ with col_left:
                                 st.rerun()
 
                 with exp_container:
-                    # --- DOSYA DURUMU VE KUTUCUKLARI ---
                     st.markdown("**📌 Dosya Durumu**")
                     col_b1, col_b2, col_b3, col_b4, col_b5, col_b6, col_b7 = st.columns(7)
                     
@@ -297,7 +292,6 @@ with col_left:
                     with col_b7:
                         ch_mail = st.checkbox("📧 Mail Atıldı", value=mail_atildi_durumu, key=f"chk_mail_{d_no}_{d_idx}")
 
-                    # Mail Tarihi alanı
                     guncel_mail_tarihi = mail_tarihi_val
                     if ch_mail:
                         c_m_lbl, c_m_input = st.columns([2, 3], vertical_alignment="center")
@@ -312,7 +306,6 @@ with col_left:
                                 placeholder="GG.AA.YYYY"
                             )
 
-                    # DURUM DEĞİŞİKLİKLERİNİ KAYDETME BUTONU
                     c_status_save, _ = st.columns([2, 5])
                     with c_status_save:
                         if st.button("💾 Durumu Kaydet", key=f"btn_save_status_{d_no}_{d_idx}", use_container_width=True):
@@ -331,7 +324,6 @@ with col_left:
 
                     st.markdown("---")
 
-                    # --- DOSYA DURUM DETAYI ---
                     st.markdown("**📝 Dosya Durum Detayı**")
 
                     if not st.session_state[edit_key]:
@@ -366,7 +358,6 @@ with col_left:
                                 st.session_state[edit_key] = False
                                 st.rerun()
 
-                    # --- YENİ İŞLEM EKLEME BÖLÜMÜ ---
                     st.markdown(f"**➕ `{d_no}` Nolu Dosyaya Yeni İşlem Ekle**")
                     with st.form(key=f"add_islem_form_main_{d_no}_{d_idx}", clear_on_submit=True):
                         col_inp, col_btn = st.columns([3, 1], vertical_alignment="center")
@@ -393,7 +384,6 @@ with col_left:
                             else:
                                 st.warning("İşlem açıklaması boş olamaz.")
 
-                    # --- GEÇMİŞ İŞLEMLER BÖLÜMÜ ---
                     st.markdown("**🕒 Dosyada bugüne kadar yapılan işlemler**")
                     if islemler:
                         for i_idx, item in enumerate(islemler):
@@ -427,7 +417,6 @@ with col_right:
     
     tab_tekli, tab_excel, tab_rapor = st.tabs(["✏️ Tekli Ekle", "📋 Toplu Yapıştır", "📊 Rapor Oluştur"])
     
-    # 1. TEKLİ DOSYA EKLEME SEKMESİ
     with tab_tekli:
         with st.form("yeni_dosya_formu_sag", clear_on_submit=True):
             dosya_no = st.text_input("Dosya No / Adı (Örn: 2025 D1 5400)", placeholder="Örn: 2025 D1 5400")
@@ -497,7 +486,6 @@ with col_right:
                 else:
                     st.warning("Lütfen Dosya No alanını doldurun.")
 
-    # 2. EXCEL'DEN TOPLU VERİ YAPIŞTIRMA SEKMESİ
     with tab_excel:
         st.caption("Excel'deki **5 Sütunluk** veriyi buraya yapıştırabilirsiniz:")
         st.caption("`DIIBNO1` | `DIIBNO2` | `DIIBNO3` | `Firma Unvanı` | `Durum Detayı`")
@@ -558,7 +546,6 @@ with col_right:
                 else:
                     st.warning("Yapıştırılan alan boş olamaz.")
 
-    # 3. EXCEL BİREBİR UYUMLU RAPOR OLUŞTURMA SEKMESİ
     with tab_rapor:
         st.caption("Excel tablonuzla birebir aynı formatta (5 Sütunlu) rapor oluşturur.")
         
@@ -609,7 +596,6 @@ with col_right:
 
     st.divider()
     
-    # --- TÜM DOSYALARI SİLME ---
     st.markdown("##### ⚠️ Veritabanı Yönetimi")
     
     if "confirm_delete_all" not in st.session_state:
