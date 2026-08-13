@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 import json
 import pytz
+import io
 from github import Github
 
 # Sayfa Yapılandırması (Geniş Ekran)
@@ -859,7 +860,7 @@ with col_right:
                         st.toast(f"✅ '{clean_dosya}' oluşturuldu!")
                     st.rerun()
                 else:
-                    st.warning("Lütfen Dosya No alanını doldurun.")
+                    st.warning("Lütfen Dosya No alanını doldurulun.")
 
     with tab_excel:
         st.caption("Excel'deki **5 Sütunluk** veriyi buraya yapıştırabilirsiniz:")
@@ -924,18 +925,18 @@ with col_right:
                     st.warning("Yapıştırılan alan boş olamaz.")
 
     with tab_rapor:
-        st.caption("Excel tablonuzla birebir aynı formatta (5 Sütunlu) rapor oluşturur.")
+        st.caption("Firma Unvanı ve Başlıklar olmaksızın 4 Sütunlu (DIIBNO1, DIIBNO2, DIIBNO3, Durum Detayı) rapor oluşturur.")
         
         col_rapor, col_temizle = st.columns(2)
         
         with col_rapor:
             if st.button("📊 Rapor Oluştur", use_container_width=True):
                 if kayitlar:
-                    rapor_metni = "DIIBNO1\tDIIBNO2\tDIIBNO3\tFirma Unvanı\tDurum Detayı\n"
+                    rapor_satirlari = []
+                    rapor_metni_list = []
                     
                     for dosya in kayitlar:
                         d_no = dosya.get("Dosya No", "")
-                        firma = dosya.get("Firma", "")
                         ana_aciklama = dosya.get("Aciklama", "")
                         islemler = dosya.get("Islemler", [])
                         
@@ -954,9 +955,21 @@ with col_right:
                         
                         final_aciklama = " | ".join(tum_aciklamalar)
                         
-                        rapor_metni += f"{d1}\t{d2}\t{d3}\t{firma}\t{final_aciklama}\n"
+                        # Excel tablosu için liste verisi (Başlıksız)
+                        rapor_satirlari.append([d1, d2, d3, final_aciklama])
+                        
+                        # Kopyalanabilir metin
+                        rapor_metni_list.append(f"{d1}\t{d2}\t{d3}\t{final_aciklama}")
                     
-                    st.session_state["rapor_cikti"] = rapor_metni
+                    # Metin çıktısı
+                    st.session_state["rapor_cikti"] = "\n".join(rapor_metni_list)
+                    
+                    # Excel dosyası üretimi (Başlıksız)
+                    df = pd.DataFrame(rapor_satirlari)
+                    output = io.BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        df.to_excel(writer, index=False, header=False)
+                    st.session_state["rapor_excel_bytes"] = output.getvalue()
                 else:
                     st.info("Raporlanacak kayıtlı dosya bulunmuyor.")
 
@@ -964,10 +977,23 @@ with col_right:
             if st.button("🧹 Temizle", use_container_width=True):
                 if "rapor_cikti" in st.session_state:
                     st.session_state["rapor_cikti"] = ""
-                    st.rerun()
+                if "rapor_excel_bytes" in st.session_state:
+                    st.session_state["rapor_excel_bytes"] = None
+                st.rerun()
 
         if "rapor_cikti" in st.session_state and st.session_state["rapor_cikti"]:
-            st.markdown("**Excel Tablo Çıktısı:**")
+            # Excel İndirme Butonu
+            if "rapor_excel_bytes" in st.session_state and st.session_state["rapor_excel_bytes"]:
+                st.download_button(
+                    label="📥 aciklamagir1.xlsx Olarak İndir",
+                    data=st.session_state["rapor_excel_bytes"],
+                    file_name="aciklamagir1.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True,
+                    type="primary"
+                )
+            
+            st.markdown("**Metin / Tablo Çıktısı:**")
             st.caption("📋 Sağ üstteki **Kopyala** simgesine tıklayıp Excel sayfanıza doğrudan `Ctrl + V` ile yapıştırabilirsiniz.")
             st.code(st.session_state["rapor_cikti"], language="text")
 
@@ -992,6 +1018,8 @@ with col_right:
                 st.session_state.confirm_delete_all = False
                 if "rapor_cikti" in st.session_state:
                     st.session_state["rapor_cikti"] = ""
+                if "rapor_excel_bytes" in st.session_state:
+                    st.session_state["rapor_excel_bytes"] = None
                 st.toast("✅ Tüm dosyalar silindi!")
                 st.rerun()
                 
