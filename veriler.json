@@ -404,7 +404,12 @@
       "Firma": "HASCELIK SAN.VE TIC.A.S.",
       "Aciklama": "İhracat yaparak 24.07.2026 da tekrar kapatma talebi yaptığından TEV hesabı ve kontrolü tekrar yapılması gerekmiş olup, kapatma aşamasındadır.",
       "OlusturmaTarihi": "2026-08-12 12:03:48",
-      "Islemler": [],
+      "Islemler": [
+        {
+          "Tarih": "13.08.2026",
+          "Not": "Tev Tablosunu gönderecek düzeltme yapacağım"
+        }
+      ],
       "BagliDosya": false,
       "KapatmaRed": false,
       "TescildeBekleyen": false,
