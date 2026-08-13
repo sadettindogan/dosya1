@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Ultra Sıkılaştırılmış CSS ve Sanatsal Mavi Kaydırma Tuşları
+# Ultra Sıkılaştırılmış CSS, Sanatsal Mavi Kaydırma Tuşları ve İnce Durum Kaydet Butonu
 st.markdown("""
 <style>
     div[data-testid="stExpander"] div[role="region"] {
@@ -88,6 +88,33 @@ st.markdown("""
         background-color: #eff6ff !important; /* Açık Mavi Arka Plan */
         box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
         transform: scale(1.2) !important; /* Büyüme Animasyonu */
+    }
+
+    /* DURUM KAYDET BUTONU: YATAY SIKI / DİKEY DAR STİLİ */
+    div[data-testid="stButton"] button[key*="btn_save_status_"] {
+        opacity: 1.0 !important;
+        width: auto !important;
+        min-width: unset !important;
+        height: 26px !important;
+        min-height: 26px !important;
+        padding: 1px 12px !important;
+        font-size: 0.78rem !important;
+        font-weight: 600 !important;
+        border-radius: 6px !important;
+        background-color: #2563eb !important;
+        color: #ffffff !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        white-space: nowrap !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
+        border: 1px solid #1d4ed8 !important;
+    }
+    div[data-testid="stButton"] button[key*="btn_save_status_"]:hover {
+        background-color: #1d4ed8 !important;
+        color: #ffffff !important;
+        transform: none !important;
+        box-shadow: 0 2px 5px rgba(29, 78, 216, 0.3) !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -626,22 +653,21 @@ with col_left:
                                 placeholder="GG.AA.YYYY"
                             )
 
-                    c_status_save, _ = st.columns([2, 5])
-                    with c_status_save:
-                        if st.button("💾 Durumu Kaydet", key=f"btn_save_status_{d_no}_{d_idx}", use_container_width=True):
-                            dosya["BagliDosya"] = ch_bagli
-                            dosya["KapatmaRed"] = ch_red
-                            dosya["TescildeBekleyen"] = ch_tescild
-                            dosya["KapatmaAsamasinda"] = ch_kapatma
-                            dosya["YaziCevabiBekleyen"] = ch_yazi
-                            dosya["Incelenmedi"] = ch_incel
-                            dosya["Incelemede"] = ch_incmd
-                            dosya["MailAtildi"] = ch_mail
-                            dosya["MailTarihi"] = guncel_mail_tarihi.strip() if ch_mail else ""
-                            
-                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} dosya durumu güncellendi")
-                            st.toast(f"✅ '{d_no}' dosyasının durumu başarıyla kaydedildi!")
-                            st.rerun()
+                    # DURUMU KAYDET BUTONU (Yatay sığacak kadar geniş, dikey ince)
+                    if st.button("💾 Durumu Kaydet", key=f"btn_save_status_{d_no}_{d_idx}", use_container_width=False):
+                        dosya["BagliDosya"] = ch_bagli
+                        dosya["KapatmaRed"] = ch_red
+                        dosya["TescildeBekleyen"] = ch_tescild
+                        dosya["KapatmaAsamasinda"] = ch_kapatma
+                        dosya["YaziCevabiBekleyen"] = ch_yazi
+                        dosya["Incelenmedi"] = ch_incel
+                        dosya["Incelemede"] = ch_incmd
+                        dosya["MailAtildi"] = ch_mail
+                        dosya["MailTarihi"] = guncel_mail_tarihi.strip() if ch_mail else ""
+                        
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} dosya durumu güncellendi")
+                        st.toast(f"✅ '{d_no}' dosyasının durumu başarıyla kaydedildi!")
+                        st.rerun()
 
                     st.markdown("---")
 
