@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, time
 import json
 import pytz
 from github import Github
@@ -13,10 +13,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Sıkılaştırılmış ve dikey boşlukları azaltan CSS
+# Sıkılaştırılmış CSS ve Yanıp Sönme (Blinking) Animasyonu
 st.markdown("""
 <style>
-    /* Expander ve form elemanları arasındaki gereksiz iç boşlukları daraltma */
+    /* Expander ve form elemanları arasındaki dikey boşlukları daraltma */
     div[data-testid="stExpander"] div[role="region"] {
         padding-top: 0.2rem !important;
         padding-bottom: 0.5rem !important;
@@ -27,6 +27,36 @@ st.markdown("""
     hr {
         margin-top: 0.4rem !important;
         margin-bottom: 0.4rem !important;
+    }
+    
+    /* Dijital Saat Stili */
+    .digital-clock {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.95rem;
+        font-weight: bold;
+        color: #008080;
+        background-color: #f0f4f8;
+        padding: 3px 8px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-bottom: 4px;
+        border: 1px solid #cbd5e1;
+    }
+
+    /* Yanıp Sönen Hatırlatma Stili */
+    @keyframes blinker {
+        0% { background-color: #ffe4e6; border-color: #ef4444; color: #991b1b; }
+        50% { background-color: #fef08a; border-color: #eab308; color: #854d0e; }
+        100% { background-color: #ffe4e6; border-color: #ef4444; color: #991b1b; }
+    }
+    .blinking-reminder {
+        animation: blinker 1s linear infinite;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 2px solid #ef4444;
+        font-weight: bold;
+        font-size: 0.9rem;
+        margin-bottom: 6px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -50,52 +80,44 @@ def verileri_getir():
         if isinstance(raw_data, dict):
             kayitlar_data = raw_data.get("Dosyalar", [])
             onemli_notlar_raw = raw_data.get("OnemliNotlar", [])
+            hatirlatmalar_raw = raw_data.get("Hatirlatmalar", [])
         else:
             kayitlar_data = raw_data if isinstance(raw_data, list) else []
             onemli_notlar_raw = []
+            hatirlatmalar_raw = []
 
         if isinstance(onemli_notlar_raw, str):
-            if onemli_notlar_raw.strip():
-                onemli_notlar_data = [onemli_notlar_raw.strip()]
-            else:
-                onemli_notlar_data = []
+            onemli_notlar_data = [onemli_notlar_raw.strip()] if onemli_notlar_raw.strip() else []
         elif isinstance(onemli_notlar_raw, list):
             onemli_notlar_data = onemli_notlar_raw
         else:
             onemli_notlar_data = []
 
+        hatirlatmalar_data = hatirlatmalar_raw if isinstance(hatirlatmalar_raw, list) else []
+
         yeni_format_data = []
         for item in kayitlar_data:
-            if "Aciklama" not in item:
-                item["Aciklama"] = ""
-            if "Islemler" not in item:
-                item["Islemler"] = []
-            if "BagliDosya" not in item:
-                item["BagliDosya"] = False
-            if "KapatmaRed" not in item:
-                item["KapatmaRed"] = False
-            if "TescildeBekleyen" not in item:
-                item["TescildeBekleyen"] = False
-            if "KapatmaAsamasinda" not in item:
-                item["KapatmaAsamasinda"] = False
-            if "YaziCevabiBekleyen" not in item:
-                item["YaziCevabiBekleyen"] = False
-            if "Incelenmedi" not in item:
-                item["Incelenmedi"] = False
-            if "MailAtildi" not in item:
-                item["MailAtildi"] = False
-            if "MailTarihi" not in item:
-                item["MailTarihi"] = ""
+            if "Aciklama" not in item: item["Aciklama"] = ""
+            if "Islemler" not in item: item["Islemler"] = []
+            if "BagliDosya" not in item: item["BagliDosya"] = False
+            if "KapatmaRed" not in item: item["KapatmaRed"] = False
+            if "TescildeBekleyen" not in item: item["TescildeBekleyen"] = False
+            if "KapatmaAsamasinda" not in item: item["KapatmaAsamasinda"] = False
+            if "YaziCevabiBekleyen" not in item: item["YaziCevabiBekleyen"] = False
+            if "Incelenmedi" not in item: item["Incelenmedi"] = False
+            if "MailAtildi" not in item: item["MailAtildi"] = False
+            if "MailTarihi" not in item: item["MailTarihi"] = ""
             yeni_format_data.append(item)
             
-        return yeni_format_data, onemli_notlar_data
+        return yeni_format_data, onemli_notlar_data, hatirlatmalar_data
     except Exception:
-        return [], []
+        return [], [], []
 
-def verileri_kaydet(yeni_kayitlar, onemli_notlar, mesaj):
+def verileri_kaydet(yeni_kayitlar, onemli_notlar, hatirlatmalar, mesaj):
     kaydedilecek_veri = {
         "Dosyalar": yeni_kayitlar,
-        "OnemliNotlar": onemli_notlar
+        "OnemliNotlar": onemli_notlar,
+        "Hatirlatmalar": hatirlatmalar
     }
     yeni_json_icerik = json.dumps(kaydedilecek_veri, ensure_ascii=False, indent=2)
     try:
@@ -113,7 +135,7 @@ def verileri_kaydet(yeni_kayitlar, onemli_notlar, mesaj):
             content=yeni_json_icerik
         )
 
-kayitlar, mevcut_onemli_notlar = verileri_getir()
+kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar = verileri_getir()
 
 # TOPLAM VE DURUM SAYILARI GÖSTERGELERİ (8 SÜTUNLU PANORAMA)
 toplam_dosya_sayisi = len(kayitlar)
@@ -146,14 +168,17 @@ with col_m8:
 st.markdown("---")
 
 # ==============================================================================
-# ÖNEMLİ NOTLAR BÖLÜMÜ (SAYFANIN 1/5 ORANINDA KISALTILMIŞ ALANI)
+# ÖNEMLİ NOTLAR VE HATIRLATMA LİSTESİ (1/5 BOYUTUNDA YAN YANA)
 # ==============================================================================
-col_not_area, _ = st.columns([1, 4])
+turkey_tz = pytz.timezone("Europe/Istanbul")
+simdi_dt = datetime.now(turkey_tz)
 
-with col_not_area:
+col_not, col_hatirlatma, _ = st.columns([1, 1, 3])
+
+# --- 1. BÖLÜM: ÖNEMLİ NOTLAR ---
+with col_not:
     st.subheader("📌 Önemli Notlar")
     
-    # 1. YENİ NOT EKLEME FORMU
     with st.form(key="form_yeni_not_ekle", clear_on_submit=True):
         yeni_not_metni = st.text_input("Yeni Not", placeholder="Not yazınız...", label_visibility="collapsed")
         submit_not = st.form_submit_button("➕ Ekle", use_container_width=True)
@@ -161,27 +186,103 @@ with col_not_area:
         if submit_not:
             if yeni_not_metni.strip() != "":
                 mevcut_onemli_notlar.append(yeni_not_metni.strip())
-                verileri_kaydet(kayitlar, mevcut_onemli_notlar, "Yeni önemli not eklendi")
+                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, "Yeni önemli not eklendi")
                 st.toast("✅ Not eklendi!")
                 st.rerun()
             else:
                 st.warning("Not boş olamaz.")
 
-    # 2. EKLENMİŞ NOTLARIN LİSTELENMESİ VE SAĞINDA SİL BUTONU
     if mevcut_onemli_notlar:
         st.write("")
         for n_idx, not_item in enumerate(mevcut_onemli_notlar):
-            c_not_text, c_not_del = st.columns([82, 18], vertical_alignment="center")
+            c_not_text, c_not_del = st.columns([80, 20], vertical_alignment="center")
             with c_not_text:
                 st.info(f"📌 {not_item}")
             with c_not_del:
                 if st.button("🗑️", key=f"btn_del_not_{n_idx}", help="Bu notu sil"):
                     mevcut_onemli_notlar.pop(n_idx)
-                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, "Önemli not silindi")
+                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, "Önemli not silindi")
                     st.toast("Not silindi!")
                     st.rerun()
     else:
         st.caption("*Henüz kayıtlı not yok.*")
+
+# --- 2. BÖLÜM: HATIRLATMA LİSTESİ VE DİJİTAL SAAT ---
+with col_hatirlatma:
+    # Küçük Dijital Saat
+    saat_str = simdi_dt.strftime("%d.%m.%Y | %H:%M:%S")
+    st.markdown(f"<div class='digital-clock'>🕒 {saat_str}</div>", unsafe_allow_html=True)
+    st.subheader("⏰ Hatırlatma Listesi")
+
+    with st.form(key="form_yeni_hatirlatma_ekle", clear_on_submit=True):
+        h_metin = st.text_input("Hatırlatma Metni", placeholder="Hatırlatma yazınız...", label_visibility="collapsed")
+        col_hd, col_ht = st.columns(2)
+        with col_hd:
+            h_tarih = st.date_input("Tarih", value=simdi_dt.date())
+        with col_ht:
+            h_saat = st.time_input("Saat", value=simdi_dt.time())
+            
+        submit_hatirlatma = st.form_submit_button("➕ Yeni Hatırlatma Ekle", use_container_width=True)
+
+        if submit_hatirlatma:
+            if h_metin.strip() != "":
+                hedef_zaman_str = datetime.combine(h_tarih, h_saat).strftime("%Y-%m-%d %H:%M:%S")
+                mevcut_hatirlatmalar.append({
+                    "Metin": h_metin.strip(),
+                    "Zaman": hedef_zaman_str,
+                    "Tamamlandi": False
+                })
+                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, "Yeni hatırlatma eklendi")
+                st.toast("✅ Hatırlatma eklendi!")
+                st.rerun()
+            else:
+                st.warning("Hatırlatma metni boş olamaz.")
+
+    # Hatırlatmaların Listelenmesi & Yanıp Sönme Mantığı
+    if mevcut_hatirlatmalar:
+        st.write("")
+        for h_idx, h_item in enumerate(mevcut_hatirlatmalar):
+            h_metin_val = h_item.get("Metin", "")
+            h_zaman_str = h_item.get("Zaman", "")
+            h_tamamlandi = h_item.get("Tamamlandi", False)
+
+            # Zaman kontrolü
+            try:
+                h_zaman_dt = datetime.strptime(h_zaman_str, "%Y-%m-%d %H:%M:%S")
+                h_zaman_dt = turkey_tz.localize(h_zaman_dt)
+                zaman_geldi = (simdi_dt >= h_zaman_dt) and not h_tamamlandi
+            except Exception:
+                zaman_geldi = False
+
+            c_h_text, c_h_action = st.columns([75, 25], vertical_alignment="center")
+
+            with c_h_text:
+                if zaman_geldi:
+                    # Zamani geldi: Yanip sonen kirmizi-sari uyari kutusu
+                    st.markdown(f"<div class='blinking-reminder'>🔔 {h_metin_val}<br><small>🗓️ {h_zaman_str[11:16]}</small></div>", unsafe_allow_html=True)
+                else:
+                    gosterim_tarih = h_zaman_str[8:10] + "." + h_zaman_str[5:7] + " " + h_zaman_str[11:16]
+                    if h_tamamlandi:
+                        st.caption(f"✅ ~~{h_metin_val}~~ ({gosterim_tarih})")
+                    else:
+                        st.warning(f"⏰ {h_metin_val}\n\n🗓️ `{gosterim_tarih}`")
+
+            with c_h_action:
+                if zaman_geldi:
+                    # Yanip sonerken beliren Tamam butonu
+                    if st.button("Tamam", key=f"btn_ok_h_{h_idx}", type="primary", help="Yanıp sönmeyi durdur"):
+                        h_item["Tamamlandi"] = True
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, "Hatırlatma tamamlandı")
+                        st.toast("Yanıp sönme durduruldu.")
+                        st.rerun()
+                else:
+                    if st.button("🗑️", key=f"btn_del_h_{h_idx}", help="Hatırlatmayı Sil"):
+                        mevcut_hatirlatmalar.pop(h_idx)
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, "Hatırlatma silindi")
+                        st.toast("Hatırlatma silindi!")
+                        st.rerun()
+    else:
+        st.caption("*Henüz kayıtlı hatırlatma yok.*")
 
 st.markdown("---")
 
@@ -264,7 +365,7 @@ with col_left:
                         with c_s_evet:
                             if st.button("✅", key=f"yes_del_{d_no}_{d_idx}", help="Evet, sil"):
                                 kayitlar.remove(dosya)
-                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"{d_no} nolu dosya silindi")
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{d_no} nolu dosya silindi")
                                 st.session_state[confirm_del_key] = False
                                 st.success(f"'{d_no}' silindi!")
                                 st.rerun()
@@ -318,7 +419,7 @@ with col_left:
                             dosya["MailAtildi"] = ch_mail
                             dosya["MailTarihi"] = guncel_mail_tarihi.strip() if ch_mail else ""
                             
-                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"{d_no} dosya durumu güncellendi")
+                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{d_no} dosya durumu güncellendi")
                             st.toast(f"✅ '{d_no}' dosyasının durumu başarıyla kaydedildi!")
                             st.rerun()
 
@@ -349,7 +450,7 @@ with col_left:
                                 
                             if submit_aciklama:
                                 dosya["Aciklama"] = yeni_aciklama_val.strip()
-                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"{d_no} dosyasının durum detayı güncellendi")
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{d_no} dosyasının durum detayı güncellendi")
                                 st.session_state[edit_key] = False
                                 st.toast("✅ Durum detayı güncellendi!")
                                 st.rerun()
@@ -370,7 +471,6 @@ with col_left:
                             
                         if submit_islem:
                             if yeni_islem_text.strip() != "":
-                                turkey_tz = pytz.timezone("Europe/Istanbul")
                                 simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
                                 
                                 islemler.append({
@@ -378,7 +478,7 @@ with col_left:
                                     "Tarih": simdi
                                 })
                                 
-                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"{d_no} dosyasına yeni işlem eklendi")
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{d_no} dosyasına yeni işlem eklendi")
                                 st.toast("✅ İşlem başarıyla eklendi!")
                                 st.rerun()
                             else:
@@ -398,7 +498,7 @@ with col_left:
                             with c_del:
                                 if st.button("🗑️ Sil", key=f"del_main_{d_no}_{i_idx}", help="Bu işlemi sil"):
                                     islemler.pop(i_idx)
-                                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"{d_no} dosyasından işlem silindi")
+                                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{d_no} dosyasından işlem silindi")
                                     st.toast("Silindi!")
                                     st.rerun()
                     else:
@@ -443,7 +543,6 @@ with col_right:
                     clean_dosya = dosya_no.strip()
                     clean_firma = firma.strip() if firma.strip() != "" else "-"
                     clean_aciklama = islem.strip()
-                    turkey_tz = pytz.timezone("Europe/Istanbul")
                     simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
 
                     mevcut = next((d for d in kayitlar if str(d.get("Dosya No")) == clean_dosya), None)
@@ -461,7 +560,7 @@ with col_right:
                         mevcut["Incelenmedi"] = incelenmedi_input
                         mevcut["MailAtildi"] = mail_atildi_input
                         mevcut["MailTarihi"] = mail_tarihi_input.strip() if mail_atildi_input else ""
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"{clean_dosya} dosyasının bilgileri güncellendi")
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{clean_dosya} dosyasının bilgileri güncellendi")
                         st.toast(f"✅ '{clean_dosya}' güncellendi!")
                     else:
                         yeni_dosya = {
@@ -480,7 +579,7 @@ with col_right:
                             "Islemler": []
                         }
                         kayitlar.append(yeni_dosya)
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"Yeni dosya eklendi: {clean_dosya}")
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"Yeni dosya eklendi: {clean_dosya}")
                         st.toast(f"✅ '{clean_dosya}' oluşturuldu!")
                     st.rerun()
                 else:
@@ -496,9 +595,7 @@ with col_right:
             
             if submit_excel:
                 if pasted_data.strip() != "":
-                    turkey_tz = pytz.timezone("Europe/Istanbul")
                     eklenen_sayi = 0
-                    
                     lines = pasted_data.strip().split("\n")
                     for line in lines:
                         parts = line.split("\t")
@@ -538,7 +635,7 @@ with col_right:
                                 eklenen_sayi += 1
                                 
                     if eklenen_sayi > 0:
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"Excel'den {eklenen_sayi} adet kayıt eklendi")
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"Excel'den {eklenen_sayi} adet kayıt eklendi")
                         st.toast(f"✅ Toplam {eklenen_sayi} adet dosya kaydı işlendi!")
                         st.rerun()
                     else:
@@ -611,7 +708,7 @@ with col_right:
         
         with col_evet:
             if st.button("✅ Evet, Tümünü Sil", type="primary", use_container_width=True):
-                verileri_kaydet([], [], "Tüm dosyalar veritabanından silindi")
+                verileri_kaydet([], [], [], "Tüm dosyalar veritabanından silindi")
                 st.session_state.confirm_delete_all = False
                 if "rapor_cikti" in st.session_state:
                     st.session_state["rapor_cikti"] = ""
