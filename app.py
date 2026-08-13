@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Ultra Sıkılaştırılmış CSS ve Hover İle Görünür Olan Yön Tuşları
+# Ultra Sıkılaştırılmış CSS ve Sanatsal Mavi Kaydırma Tuşları
 st.markdown("""
 <style>
     div[data-testid="stExpander"] div[role="region"] {
@@ -66,18 +66,28 @@ st.markdown("""
         margin-bottom: 4px;
     }
 
-    /* HOVER (ÜZERİNE GELİNCE GÖRÜNEN) KAYDIRMA TUŞLARI */
+    /* SANATSAL, MİNİMAL VE MAVİ KAYDIRMA TUŞLARI */
     .stButton > button {
         opacity: 0.15;
-        transition: opacity 0.2s ease-in-out, background-color 0.2s;
+        color: #2563eb !important; /* Mavi Simge */
         border: none !important;
         background: transparent !important;
-        padding: 0px 4px !important;
+        padding: 0px !important;
+        font-size: 0.7rem !important; /* Küçük sanatsal boyut */
+        width: 22px !important;
+        height: 22px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .stButton > button:hover {
         opacity: 1.0 !important;
-        background-color: #e2e8f0 !important;
-        border-radius: 4px !important;
+        color: #1d4ed8 !important;
+        background-color: #eff6ff !important; /* Açık Mavi Arka Plan */
+        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
+        transform: scale(1.2) !important; /* Büyüme Animasyonu */
     }
 </style>
 """, unsafe_allow_html=True)
@@ -196,7 +206,7 @@ with col_m9: st.metric(label="📧 Mail Atıldı", value=f"{mail_atildi_sayisi}"
 st.markdown("---")
 
 # ==============================================================================
-# DİNAMİK BÖLÜM SIRALAMA MEKANİZMASI (HOVER İLE GÖRÜNEN BUTONLAR)
+# DİNAMİK BÖLÜM SIRALAMA MEKANİZMASI (SANATSAL MAVİ BUTONLAR)
 # ==============================================================================
 turkey_tz = pytz.timezone("Europe/Istanbul")
 simdi_dt = datetime.now(turkey_tz)
