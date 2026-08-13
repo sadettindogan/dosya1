@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Ultra Sıkılaştırılmış CSS (Dikey Boyutları 1/5 Oranına Düşürme)
+# Ultra Sıkılaştırılmış CSS (Dikey Boyutları 1/5 Oranında)
 st.markdown("""
 <style>
     /* Expander ve form elemanları dikey iç boşluklarını daraltma */
@@ -37,13 +37,6 @@ st.markdown("""
         padding-right: 0.5rem !important;
         margin-bottom: 0.2rem !important;
         min-height: auto !important;
-    }
-
-    /* Kapatma ve Not Satır Sıkılaştırma */
-    .compact-row {
-        padding: 2px 0px;
-        margin-bottom: 2px;
-        line-height: 1.2;
     }
 
     /* Dijital Saat Stili */
@@ -125,6 +118,7 @@ def verileri_getir():
             if "MailAtildi" not in item: item["MailAtildi"] = False
             if "MailTarihi" not in item: item["MailTarihi"] = ""
             if "SiraNo" not in item: item["SiraNo"] = 9999
+            if "IncelenmediSiraNo" not in item: item["IncelenmediSiraNo"] = 9999
             yeni_format_data.append(item)
             
         return yeni_format_data, onemli_notlar_data, hatirlatmalar_data
@@ -155,7 +149,7 @@ def verileri_kaydet(yeni_kayitlar, onemli_notlar, hatirlatmalar, mesaj):
 
 kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar = verileri_getir()
 
-# TOPLAM VE DURUM SAYILARI GÖSTERGELERİ (8 SÜTUNLU PANORAMA)
+# TOPLAM VE DURUM SAYILARI GÖSTERGELERİ
 toplam_dosya_sayisi = len(kayitlar)
 bagli_dosya_sayisi = sum(1 for d in kayitlar if d.get("BagliDosya", False))
 kapatma_red_sayisi = sum(1 for d in kayitlar if d.get("KapatmaRed", False))
@@ -186,14 +180,14 @@ with col_m8:
 st.markdown("---")
 
 # ==============================================================================
-# ÜÇLÜ YAN YANA PANEL (1/5 BOYUTLARINDA - KOMPAKT DİKEY DÜZEN)
+# ÜÇLÜ/DÖRTLÜ ÜST PANEL (KAPATMA %20 GENİŞLETİLDİ + İNCELENMEDİ EKLENDİ)
 # ==============================================================================
 turkey_tz = pytz.timezone("Europe/Istanbul")
 simdi_dt = datetime.now(turkey_tz)
 
-col_kapatma_panel, col_not, col_hatirlatma, _ = st.columns([1, 1, 1, 2])
+col_kapatma_panel, col_incelenmedi_panel, col_not, col_hatirlatma, _ = st.columns([1.2, 1.2, 1, 1, 0.6])
 
-# --- 1. BÖLÜM: KAPATMA AŞAMASINDA OLAN DOSYALAR ---
+# --- 1. BÖLÜM: KAPATMA AŞAMASINDA OLAN DOSYALAR (%20 GENİŞLETİLDİ) ---
 with col_kapatma_panel:
     st.subheader("🏁 Kapatma Aşamasındakiler")
     
@@ -206,7 +200,7 @@ with col_kapatma_panel:
                 k_dno = k_dosya.get("Dosya No", "")
                 k_firma = k_dosya.get("Firma", "-")
                 
-                c_k_txt, c_k_up, c_k_down = st.columns([72, 14, 14], vertical_alignment="center")
+                c_k_txt, c_k_up, c_k_down = st.columns([74, 13, 13], vertical_alignment="center")
                 
                 with c_k_txt:
                     st.markdown(f"**{k_idx + 1}.** `{k_dno}` | <small>{k_firma}</small>", unsafe_allow_html=True)
@@ -247,7 +241,61 @@ with col_kapatma_panel:
         else:
             st.caption("*Kapatma aşamasında işaretli dosya yok.*")
 
-# --- 2. BÖLÜM: ÖNEMLİ NOTLAR ---
+# --- 2. BÖLÜM: İNCELENMEDİ BAŞLIĞI ALTI ---
+with col_incelenmedi_panel:
+    st.subheader("🔍 İncelenmedi")
+    
+    incelenmedi_dosyalar = [d for d in kayitlar if d.get("Incelenmedi", False)]
+    incelenmedi_dosyalar = sorted(incelenmedi_dosyalar, key=lambda x: x.get("IncelenmediSiraNo", 9999))
+    
+    with st.container(height=280):
+        if incelenmedi_dosyalar:
+            for i_idx, i_dosya in enumerate(incelenmedi_dosyalar):
+                i_dno = i_dosya.get("Dosya No", "")
+                i_firma = i_dosya.get("Firma", "-")
+                
+                c_i_txt, c_i_up, c_i_down = st.columns([74, 13, 13], vertical_alignment="center")
+                
+                with c_i_txt:
+                    st.markdown(f"**{i_idx + 1}.** `{i_dno}` | <small>{i_firma}</small>", unsafe_allow_html=True)
+                
+                with c_i_up:
+                    if st.button("⬆️", key=f"btn_inc_up_{i_dno}_{i_idx}", help="Yukarı Taş"):
+                        if i_idx > 0:
+                            ust_dosya = incelenmedi_dosyalar[i_idx - 1]
+                            curr_sira = i_dosya.get("IncelenmediSiraNo", i_idx)
+                            ust_sira = ust_dosya.get("IncelenmediSiraNo", i_idx - 1)
+                            
+                            i_dosya["IncelenmediSiraNo"] = ust_sira if ust_sira != curr_sira else i_idx - 1
+                            ust_dosya["IncelenmediSiraNo"] = curr_sira if ust_sira != curr_sira else i_idx
+                        else:
+                            i_dosya["IncelenmediSiraNo"] = -1
+                            
+                        for idx, d in enumerate(sorted(incelenmedi_dosyalar, key=lambda x: x.get("IncelenmediSiraNo", 9999))):
+                            d["IncelenmediSiraNo"] = idx
+                            
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{i_dno} incelenmedi sırasında yukarı taşındı")
+                        st.rerun()
+
+                with c_i_down:
+                    if st.button("⬇️", key=f"btn_inc_dn_{i_dno}_{i_idx}", help="Aşağı Taş"):
+                        if i_idx < len(incelenmedi_dosyalar) - 1:
+                            alt_dosya = incelenmedi_dosyalar[i_idx + 1]
+                            curr_sira = i_dosya.get("IncelenmediSiraNo", i_idx)
+                            alt_sira = alt_dosya.get("IncelenmediSiraNo", i_idx + 1)
+                            
+                            i_dosya["IncelenmediSiraNo"] = alt_sira if alt_sira != curr_sira else i_idx + 1
+                            alt_dosya["IncelenmediSiraNo"] = curr_sira if alt_sira != curr_sira else i_idx
+                            
+                            for idx, d in enumerate(sorted(incelenmedi_dosyalar, key=lambda x: x.get("IncelenmediSiraNo", 9999))):
+                                d["IncelenmediSiraNo"] = idx
+                                
+                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, f"{i_dno} incelenmedi sırasında aşağı taşındı")
+                            st.rerun()
+        else:
+            st.caption("*İncelenmedi olarak işaretli dosya yok.*")
+
+# --- 3. BÖLÜM: ÖNEMLİ NOTLAR ---
 with col_not:
     st.subheader("📌 Önemli Notlar")
     
@@ -279,7 +327,7 @@ with col_not:
         else:
             st.caption("*Henüz kayıtlı not yok.*")
 
-# --- 3. BÖLÜM: HATIRLATMA LİSTESİ VE DİJİTAL SAAT ---
+# --- 4. BÖLÜM: HATIRLATMA LİSTESİ VE DİJİTAL SAAT ---
 with col_hatirlatma:
     saat_str = simdi_dt.strftime("%d.%m.%Y | %H:%M:%S")
     st.markdown(f"<div class='digital-clock'>🕒 {saat_str}</div>", unsafe_allow_html=True)
@@ -397,7 +445,6 @@ with col_left:
                 if confirm_del_key not in st.session_state:
                     st.session_state[confirm_del_key] = False
 
-                # TEMİZ DURUM SİMGELERİ
                 simgeler = ""
                 if bagli_durumu: simgeler += "🔗 "
                 if kapatma_red_durumu: simgeler += "🚫 "
@@ -642,6 +689,7 @@ with col_right:
                             "MailTarihi": mail_tarihi_input.strip() if mail_atildi_input else "",
                             "OlusturmaTarihi": simdi,
                             "SiraNo": 9999,
+                            "IncelenmediSiraNo": 9999,
                             "Islemler": []
                         }
                         kayitlar.append(yeni_dosya)
@@ -697,6 +745,7 @@ with col_right:
                                         "MailTarihi": "",
                                         "OlusturmaTarihi": simdi,
                                         "SiraNo": 9999,
+                                        "IncelenmediSiraNo": 9999,
                                         "Islemler": []
                                     })
                                 eklenen_sayi += 1
