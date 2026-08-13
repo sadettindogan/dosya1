@@ -14,7 +14,10 @@
       "Incelenmedi": true,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2024 D1 3992",
@@ -35,7 +38,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 1
+      "SiraNo": 1,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2025 D1 6527",
@@ -51,7 +57,10 @@
       "Incelenmedi": true,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2024 H1 24",
@@ -67,7 +76,10 @@
       "Incelenmedi": true,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2024 D1 1437",
@@ -83,7 +95,10 @@
       "Incelenmedi": true,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2024 D1 3668",
@@ -99,7 +114,10 @@
       "Incelenmedi": true,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2025 D1 1690",
@@ -115,7 +133,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2024 D1 414",
@@ -131,7 +152,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2024 D1 1687",
@@ -147,7 +171,10 @@
       "Incelenmedi": true,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2023 D1 3238",
@@ -163,7 +190,10 @@
       "Incelenmedi": false,
       "MailAtildi": true,
       "MailTarihi": "04.05.2026",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2024 D1 4965",
@@ -179,7 +209,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 0
+      "SiraNo": 0,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2024 D1 5771",
@@ -195,7 +228,10 @@
       "Incelenmedi": true,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2022 D1 5810",
@@ -211,7 +247,10 @@
       "Incelenmedi": true,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2022 D1 5228",
@@ -227,7 +266,10 @@
       "Incelenmedi": true,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2022 D1 5267",
@@ -243,7 +285,10 @@
       "Incelenmedi": false,
       "MailAtildi": true,
       "MailTarihi": "07.08.2026",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2023 D1 1011",
@@ -259,7 +304,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2024 D1 4243",
@@ -275,7 +323,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2022 D1 6693",
@@ -291,7 +342,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2023 D1 390",
@@ -307,7 +361,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2022 D1 2232",
@@ -323,7 +380,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2023 D1 2108",
@@ -339,7 +399,10 @@
       "Incelenmedi": true,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2023 D1 5483",
@@ -355,7 +418,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2022 D1 2650",
@@ -371,7 +437,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 2
+      "SiraNo": 2,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2023 D1 1075",
@@ -387,7 +456,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2023 D1 2177",
@@ -403,7 +475,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2022 D1 656",
@@ -419,7 +494,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2023 D1 1008",
@@ -435,7 +513,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2020 D1 5858",
@@ -451,7 +532,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 3
+      "SiraNo": 3,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2022 D1 3046",
@@ -467,7 +551,10 @@
       "Incelenmedi": false,
       "MailAtildi": true,
       "MailTarihi": "24.04.2026",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2021 D1 253",
@@ -483,7 +570,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2020 D1 2267",
@@ -499,7 +589,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2021 D1 2603",
@@ -515,7 +608,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 4
+      "SiraNo": 4,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2021 D1 2173",
@@ -531,7 +627,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2019 D1 4452",
@@ -547,7 +646,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2018 D1 976",
@@ -563,7 +665,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2016 D1 3587",
@@ -579,7 +684,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2016 D1 1177",
@@ -595,7 +703,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 5
+      "SiraNo": 5,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2008 D1 3741",
@@ -611,7 +722,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2008 D1 1676",
@@ -627,7 +741,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2008 D1 364",
@@ -643,7 +760,10 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     },
     {
       "Dosya No": "2005 D1 5070",
@@ -659,9 +779,19 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 9999
+      "SiraNo": 9999,
+      "Incelemede": false,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     }
   ],
   "OnemliNotlar": [],
-  "Hatirlatmalar": []
+  "Hatirlatmalar": [],
+  "BolumSirasi": [
+    "incelenmedi",
+    "kapatma",
+    "incelemede",
+    "notlar",
+    "hatirlatma"
+  ]
 }
