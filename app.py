@@ -45,39 +45,50 @@ repo = g.get_repo(REPO_NAME)
 def verileri_getir():
     try:
         file_content = repo.get_contents(FILE_PATH)
-        data = json.loads(file_content.decoded_content.decode('utf-8'))
+        raw_data = json.loads(file_content.decoded_content.decode('utf-8'))
         
-        yeni_format_data = []
-        if isinstance(data, list):
-            for item in data:
-                if "Aciklama" not in item:
-                    item["Aciklama"] = ""
-                if "Islemler" not in item:
-                    item["Islemler"] = []
-                if "BagliDosya" not in item:
-                    item["BagliDosya"] = False
-                if "KapatmaRed" not in item:
-                    item["KapatmaRed"] = False
-                if "TescildeBekleyen" not in item:
-                    item["TescildeBekleyen"] = False
-                if "KapatmaAsamasinda" not in item:
-                    item["KapatmaAsamasinda"] = False
-                if "YaziCevabiBekleyen" not in item:
-                    item["YaziCevabiBekleyen"] = False
-                if "Incelenmedi" not in item:
-                    item["Incelenmedi"] = False
-                if "MailAtildi" not in item:
-                    item["MailAtildi"] = False
-                if "MailTarihi" not in item:
-                    item["MailTarihi"] = ""
-                yeni_format_data.append(item)
-            return yeni_format_data
-        return []
-    except Exception:
-        return []
+        # Eğer veri dict formatında saklanıyorsa (Dosyalar + OnemliNotlar)
+        if isinstance(raw_data, dict):
+            kayitlar_data = raw_data.get("Dosyalar", [])
+            onemli_notlar_data = raw_data.get("OnemliNotlar", "")
+        else:
+            kayitlar_data = raw_data if isinstance(raw_data, list) else []
+            onemli_notlar_data = ""
 
-def verileri_kaydet(yeni_kayitlar, mesaj):
-    yeni_json_icerik = json.dumps(yeni_kayitlar, ensure_ascii=False, indent=2)
+        yeni_format_data = []
+        for item in kayitlar_data:
+            if "Aciklama" not in item:
+                item["Aciklama"] = ""
+            if "Islemler" not in item:
+                item["Islemler"] = []
+            if "BagliDosya" not in item:
+                item["BagliDosya"] = False
+            if "KapatmaRed" not in item:
+                item["KapatmaRed"] = False
+            if "TescildeBekleyen" not in item:
+                item["TescildeBekleyen"] = False
+            if "KapatmaAsamasinda" not in item:
+                item["KapatmaAsamasinda"] = False
+            if "YaziCevabiBekleyen" not in item:
+                item["YaziCevabiBekleyen"] = False
+            if "Incelenmedi" not in item:
+                item["Incelenmedi"] = False
+            if "MailAtildi" not in item:
+                item["MailAtildi"] = False
+            if "MailTarihi" not in item:
+                item["MailTarihi"] = ""
+            yeni_format_data.append(item)
+            
+        return yeni_format_data, onemli_notlar_data
+    except Exception:
+        return [], ""
+
+def verileri_kaydet(yeni_kayitlar, onemli_notlar, mesaj):
+    kaydedilecek_veri = {
+        "Dosyalar": yeni_kayitlar,
+        "OnemliNotlar": onemli_notlar
+    }
+    yeni_json_icerik = json.dumps(kaydedilecek_veri, ensure_ascii=False, indent=2)
     try:
         file_content = repo.get_contents(FILE_PATH)
         repo.update_file(
@@ -93,7 +104,7 @@ def verileri_kaydet(yeni_kayitlar, mesaj):
             content=yeni_json_icerik
         )
 
-kayitlar = verileri_getir()
+kayitlar, mevcut_onemli_notlar = verileri_getir()
 
 # TOPLAM VE DURUM SAYILARI GÖSTERGELERİ (8 SÜTUNLU PANORAMA)
 toplam_dosya_sayisi = len(kayitlar)
@@ -122,6 +133,31 @@ with col_m7:
     st.metric(label="🔍 İncelenmedi", value=f"{incelenmedi_sayisi}")
 with col_m8:
     st.metric(label="📧 Mail Atıldı", value=f"{mail_atildi_sayisi}")
+
+st.markdown("---")
+
+# ==============================================================================
+# ÖNEMLİ NOTLAR BÖLÜMÜ (YATAYDA KOMPAKT)
+# ==============================================================================
+with st.container():
+    st.subheader("📌 Önemli Notlar")
+    with st.form(key="form_onemli_notlar"):
+        c_not_input, c_not_btn = st.columns([5, 1], vertical_alignment="bottom")
+        with c_not_input:
+            yeni_onemli_not = st.text_area(
+                "Önemli Notlar", 
+                value=mevcut_onemli_notlar, 
+                placeholder="Genel hatırlatmaları veya önemli notları buraya yazabilirsiniz...", 
+                height=68,
+                label_visibility="collapsed"
+            )
+        with c_not_btn:
+            submit_not = st.form_submit_button("💾 Notu Kaydet", use_container_width=True)
+            
+        if submit_not:
+            verileri_kaydet(kayitlar, yeni_onemli_not.strip(), "Önemli notlar güncellendi")
+            st.toast("✅ Önemli notlar başarıyla kaydedildi!")
+            st.rerun()
 
 st.markdown("---")
 
@@ -187,7 +223,6 @@ with col_left:
                     else:
                         mail_baslik_eki = " 📧 (mail atıldı)"
 
-                # BAŞLIK ALANINI YATAYDA 1/3 DARALTALIM ([60, 40] DÜZENİ)
                 col_exp, _space, col_dosya_sil = st.columns([60, 33, 7], vertical_alignment="center")
                 
                 with col_exp:
@@ -206,7 +241,7 @@ with col_left:
                         with c_s_evet:
                             if st.button("✅", key=f"yes_del_{d_no}_{d_idx}", help="Evet, sil"):
                                 kayitlar.remove(dosya)
-                                verileri_kaydet(kayitlar, f"{d_no} nolu dosya silindi")
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"{d_no} nolu dosya silindi")
                                 st.session_state[confirm_del_key] = False
                                 st.success(f"'{d_no}' silindi!")
                                 st.rerun()
@@ -263,7 +298,7 @@ with col_left:
                             dosya["MailAtildi"] = ch_mail
                             dosya["MailTarihi"] = guncel_mail_tarihi.strip() if ch_mail else ""
                             
-                            verileri_kaydet(kayitlar, f"{d_no} dosya durumu güncellendi")
+                            verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"{d_no} dosya durumu güncellendi")
                             st.toast(f"✅ '{d_no}' dosyasının durumu başarıyla kaydedildi!")
                             st.rerun()
 
@@ -295,7 +330,7 @@ with col_left:
                                 
                             if submit_aciklama:
                                 dosya["Aciklama"] = yeni_aciklama_val.strip()
-                                verileri_kaydet(kayitlar, f"{d_no} dosyasının durum detayı güncellendi")
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"{d_no} dosyasının durum detayı güncellendi")
                                 st.session_state[edit_key] = False
                                 st.toast("✅ Durum detayı güncellendi!")
                                 st.rerun()
@@ -325,7 +360,7 @@ with col_left:
                                     "Tarih": simdi
                                 })
                                 
-                                verileri_kaydet(kayitlar, f"{d_no} dosyasına yeni işlem eklendi")
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"{d_no} dosyasına yeni işlem eklendi")
                                 st.toast("✅ İşlem başarıyla eklendi!")
                                 st.rerun()
                             else:
@@ -346,7 +381,7 @@ with col_left:
                             with c_del:
                                 if st.button("🗑️ Sil", key=f"del_main_{d_no}_{i_idx}", help="Bu işlemi sil"):
                                     islemler.pop(i_idx)
-                                    verileri_kaydet(kayitlar, f"{d_no} dosyasından işlem silindi")
+                                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"{d_no} dosyasından işlem silindi")
                                     st.toast("Silindi!")
                                     st.rerun()
                     else:
@@ -410,7 +445,7 @@ with col_right:
                         mevcut["Incelenmedi"] = incelenmedi_input
                         mevcut["MailAtildi"] = mail_atildi_input
                         mevcut["MailTarihi"] = mail_tarihi_input.strip() if mail_atildi_input else ""
-                        verileri_kaydet(kayitlar, f"{clean_dosya} dosyasının bilgileri güncellendi")
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"{clean_dosya} dosyasının bilgileri güncellendi")
                         st.toast(f"✅ '{clean_dosya}' güncellendi!")
                     else:
                         yeni_dosya = {
@@ -429,7 +464,7 @@ with col_right:
                             "Islemler": []
                         }
                         kayitlar.append(yeni_dosya)
-                        verileri_kaydet(kayitlar, f"Yeni dosya eklendi: {clean_dosya}")
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"Yeni dosya eklendi: {clean_dosya}")
                         st.toast(f"✅ '{clean_dosya}' oluşturuldu!")
                     st.rerun()
                 else:
@@ -488,7 +523,7 @@ with col_right:
                                 eklenen_sayi += 1
                                 
                     if eklenen_sayi > 0:
-                        verileri_kaydet(kayitlar, f"Excel'den {eklenen_sayi} adet kayıt eklendi")
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, f"Excel'den {eklenen_sayi} adet kayıt eklendi")
                         st.toast(f"✅ Toplam {eklenen_sayi} adet dosya kaydı işlendi!")
                         st.rerun()
                     else:
@@ -563,7 +598,7 @@ with col_right:
         
         with col_evet:
             if st.button("✅ Evet, Tümünü Sil", type="primary", use_container_width=True):
-                verileri_kaydet([], "Tüm dosyalar veritabanından silindi")
+                verileri_kaydet([], "", "Tüm dosyalar veritabanından silindi")
                 st.session_state.confirm_delete_all = False
                 if "rapor_cikti" in st.session_state:
                     st.session_state["rapor_cikti"] = ""
