@@ -438,7 +438,7 @@
       "MailAtildi": false,
       "MailTarihi": "",
       "SiraNo": 2,
-      "Incelemede": false,
+      "Incelemede": true,
       "IncelenmediSiraNo": 9999,
       "IncelemedeSiraNo": 9999
     },
