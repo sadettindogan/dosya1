@@ -786,7 +786,13 @@
     }
   ],
   "OnemliNotlar": [],
-  "Hatirlatmalar": [],
+  "Hatirlatmalar": [
+    {
+      "Metin": "zoom toplantısı",
+      "Zaman": "2026-08-13 10:20:00",
+      "Tamamlandi": false
+    }
+  ],
   "BolumSirasi": [
     "incelemede",
     "kapatma",
