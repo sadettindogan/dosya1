@@ -771,7 +771,9 @@
       "IncelemedeSiraNo": 9999
     }
   ],
-  "OnemliNotlar": [],
+  "OnemliNotlar": [
+    "17,18,19.08.2026 vekalet"
+  ],
   "Hatirlatmalar": [],
   "BolumSirasi": [
     "kapatma",
