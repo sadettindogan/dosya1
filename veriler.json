@@ -779,7 +779,12 @@
       "Firma": "Bekap",
       "Aciklama": "dosya kapanacak durumda.iigü makbuzu ve ekspertiz eksik.Firmaya mail atıldı.",
       "OlusturmaTarihi": "2026-08-14 11:49:36",
-      "Islemler": [],
+      "Islemler": [
+        {
+          "Tarih": "14.08.2026 12:00",
+          "Islem": "Firmaya (Zühre hanıma) mail atıldı"
+        }
+      ],
       "BagliDosya": false,
       "KapatmaRed": false,
       "TescildeBekleyen": false,
