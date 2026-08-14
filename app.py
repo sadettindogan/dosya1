@@ -1,6 +1,9 @@
-# Expander İçeriği: Dosya Detayları, Durum Değişikliği ve İşlem Geçmişi
+with col_exp:
+                    exp_header = f"📂 **Dosya No:** {d_no}\n\n🏢 **Firma:** {firma} {simgeler}({len(islemler)} İşlem){mail_baslik_eki}"
+                    exp_container = st.expander(exp_header, expanded=False)
+
                 with exp_container:
-                    # 1. BÖLÜM: DOSYA DURUMU (Ana Açıklama)
+                    # 1. BÖLÜM: DOSYA DURUMU
                     st.write("##### 1. Dosya Durumu")
                     st.markdown(f"**Açıklama:** {ana_aciklama if ana_aciklama else '_Açıklama yok._'}")
                     
@@ -57,7 +60,7 @@
                     else:
                         st.caption("*Henüz kaydedilmiş bir işlem yok.*")
 
-                    # Yeni İşlem Ekle Formu (Bölüm 3'ün İçinde)
+                    # Yeni İşlem Ekle Formu (3. Bölümün İçinde)
                     st.markdown("###### ➕ Yeni İşlem Ekle")
                     with st.form(key=f"form_islem_ekle_{d_no}_{d_idx}", clear_on_submit=True):
                         yeni_islem_notu = st.text_input("İşlem Notu", placeholder=f"{d_no} nolu dosyaya yapılan işlemi giriniz...", label_visibility="collapsed")
