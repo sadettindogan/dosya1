@@ -792,8 +792,8 @@
       "YaziCevabiBekleyen": false,
       "Incelenmedi": false,
       "Incelemede": false,
-      "MailAtildi": false,
-      "MailTarihi": "",
+      "MailAtildi": true,
+      "MailTarihi": "14.08.2026",
       "SiraNo": 9999,
       "IncelenmediSiraNo": 9999,
       "IncelemedeSiraNo": 9999
