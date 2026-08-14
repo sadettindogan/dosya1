@@ -534,6 +534,7 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
 
                         with c_h_text:
                             if zaman_geldi:
+                                # Sabit kırmızı kutu
                                 st.markdown(f"<div class='red-reminder-box'>🔔 {h_metin_val}<br><small>🗓️ {h_zaman_str[11:16]}</small></div>", unsafe_allow_html=True)
                             else:
                                 gosterim_tarih = h_zaman_str[8:10] + "." + h_zaman_str[5:7] + " " + h_zaman_str[11:16]
@@ -549,7 +550,7 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
                                     verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, "Hatırlatma tamamlandı")
                                     st.rerun()
                             else:
-                                if st.button("🗑️", key=f"del_h_{h_idx}", help="Sil"):
+                                if st.button("🗑️", key=f"btn_del_h_{h_idx}", help="Sil"):
                                     mevcut_hatirlatmalar.pop(h_idx)
                                     verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, "Hatırlatma silindi")
                                     st.rerun()
@@ -565,7 +566,7 @@ col_left, col_right = st.columns([65, 35], gap="large")
 # SOL TARAF: GENİŞ DOSYA LİSTESİ VE GEÇMİŞ İŞLEMLER
 # ==============================================================================
 with col_left:
-    st.subheader("📋 Kayıtlı Dosyalar ve Dosyada Bugüne Kadar Yapılan İşlemler")
+    st.subheader("📋 Kayıtlı Dosyalar ve İşlem Akışı")
     
     search_col, _ = st.columns([1, 2])
     with search_col:
@@ -648,151 +649,381 @@ with col_left:
                                 st.rerun()
 
                 with exp_container:
-                    # DURUM DÜZENLEME SEÇENEKLERİ
-                    st.markdown("##### 📌 Dosya Durumu Düzenle")
-                    col_cb1, col_cb2, col_cb3, col_cb4 = st.columns(4)
-                    with col_cb1:
-                        ch_bagli = st.checkbox("🔗 Bağlı", value=bagli_durumu, key=f"cb_bagli_{d_no}_{d_idx}")
-                        ch_red = st.checkbox("🚫 Red", value=kapatma_red_durumu, key=f"cb_red_{d_no}_{d_idx}")
-                    with col_cb2:
-                        ch_tescilde = st.checkbox("⏳ Tescilde Bekleyen", value=tescilde_durumu, key=f"cb_tescilde_{d_no}_{d_idx}")
-                        ch_kapatma = st.checkbox("🏁 Kapatma Aşamasında", value=kapatma_asamasinda_durumu, key=f"cb_kapatma_{d_no}_{d_idx}")
-                    with col_cb3:
-                        ch_yazi = st.checkbox("✉️ Yazı Cevabı Bekleyen", value=yazi_cevabi_durumu, key=f"cb_yazi_{d_no}_{d_idx}")
-                        ch_incelenmedi = st.checkbox("🔍 İncelenmedi", value=incelenmedi_durumu, key=f"cb_incelenmedi_{d_no}_{d_idx}")
-                    with col_cb4:
-                        ch_incelemede = st.checkbox("🧐 İncelemede", value=incelemede_durumu, key=f"cb_incelemede_{d_no}_{d_idx}")
-                        ch_mail = st.checkbox("📧 Mail Atıldı", value=mail_atildi_durumu, key=f"cb_mail_{d_no}_{d_idx}")
+                    st.markdown("**📌 Dosya Durumu**")
+                    
+                    c_row1_1, c_row1_2, c_row1_3, c_row1_4 = st.columns(4)
+                    with c_row1_1: ch_bagli = st.checkbox("🔗 Bağlı", value=bagli_durumu, key=f"chk_bagli_{d_no}_{d_idx}")
+                    with c_row1_2: ch_red = st.checkbox("❌ Red", value=kapatma_red_durumu, key=f"chk_red_{d_no}_{d_idx}")
+                    with c_row1_3: ch_tescild = st.checkbox("⏳ Tescilde", value=tescilde_durumu, key=f"chk_tescild_{d_no}_{d_idx}")
+                    with c_row1_4: ch_kapatma = st.checkbox("🏁 Kapatmada", value=kapatma_asamasinda_durumu, key=f"chk_kapatma_{d_no}_{d_idx}")
 
-                    mail_tarih_giris = mail_tarihi_val
+                    c_row2_1, c_row2_2, c_row2_3, c_row2_4 = st.columns(4)
+                    with c_row2_1: ch_yazi = st.checkbox("✉️ Yazı Cevabı", value=yazi_cevabi_durumu, key=f"chk_yazi_{d_no}_{d_idx}")
+                    with c_row2_2: ch_incel = st.checkbox("🔍 İncelenmedi", value=incelenmedi_durumu, key=f"chk_incel_{d_no}_{d_idx}")
+                    with c_row2_3: ch_incmd = st.checkbox("🧐 İncelemede", value=incelemede_durumu, key=f"chk_incmd_{d_no}_{d_idx}")
+                    with c_row2_4: ch_mail = st.checkbox("📧 Mail Atıldı", value=mail_atildi_durumu, key=f"chk_mail_{d_no}_{d_idx}")
+
+                    guncel_mail_tarihi = mail_tarihi_val
                     if ch_mail:
-                        mail_tarih_giris = st.text_input("Mail Tarihi", value=mail_tarihi_val, placeholder="Örn: 12.08.2025", key=f"txt_mail_tarihi_{d_no}_{d_idx}")
+                        c_m_lbl, c_m_input = st.columns([2, 3], vertical_alignment="center")
+                        with c_m_lbl:
+                            st.caption("📅 **Mail Gönderim Tarihi:**")
+                        with c_m_input:
+                            guncel_mail_tarihi = st.text_input(
+                                "Mail Tarihi", 
+                                value=mail_tarihi_val if mail_tarihi_val else datetime.now().strftime("%d.%m.%Y"), 
+                                key=f"inp_mail_date_{d_no}_{d_idx}",
+                                label_visibility="collapsed",
+                                placeholder="GG.AA.YYYY"
+                            )
 
                     st.markdown("<div class='save-status-container'>", unsafe_allow_html=True)
                     if st.button("💾 Durumu Kaydet", key=f"btn_save_status_{d_no}_{d_idx}"):
                         dosya["BagliDosya"] = ch_bagli
                         dosya["KapatmaRed"] = ch_red
-                        dosya["TescildeBekleyen"] = ch_tescilde
+                        dosya["TescildeBekleyen"] = ch_tescild
                         dosya["KapatmaAsamasinda"] = ch_kapatma
                         dosya["YaziCevabiBekleyen"] = ch_yazi
-                        dosya["Incelenmedi"] = ch_incelenmedi
-                        dosya["Incelemede"] = ch_incelemede
+                        dosya["Incelenmedi"] = ch_incel
+                        dosya["Incelemede"] = ch_incmd
                         dosya["MailAtildi"] = ch_mail
-                        dosya["MailTarihi"] = mail_tarih_giris if ch_mail else ""
+                        dosya["MailTarihi"] = guncel_mail_tarihi.strip() if ch_mail else ""
                         
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} durumu güncellendi")
-                        st.toast("✅ Durum güncellendi!")
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} dosya durumu güncellendi")
+                        st.toast(f"✅ '{d_no}' dosyasının durumu başarıyla kaydedildi!")
                         st.rerun()
                     st.markdown("</div>", unsafe_allow_html=True)
 
                     st.markdown("---")
 
-                    # İŞLEM EKLEME VEYA DÜZENLEME FORMU
-                    st.markdown("##### 📝 Dosyada Bugüne Kadar Yapılan İşlemler")
-                    
+                    st.markdown("**📝 Dosya Durum Detayı**")
+
                     if not st.session_state[edit_key]:
-                        if ana_aciklama:
-                            st.info(f"**Açıklama:** {ana_aciklama}")
-                        if st.button("✏️ Açıklamayı / İşlemleri Düzenle", key=f"btn_edit_aciklama_{d_no}_{d_idx}"):
-                            st.session_state[edit_key] = True
-                            st.rerun()
+                        c_aciklama, c_edit_btn = st.columns([5, 1], vertical_alignment="center")
+                        with c_aciklama:
+                            if ana_aciklama.strip() != "":
+                                st.info(ana_aciklama)
+                            else:
+                                st.caption("*Bu dosya için henüz durum detayı eklenmemiş.*")
+                        with c_edit_btn:
+                            if st.button("✏️ Düzenle", key=f"btn_edit_{d_no}_{d_idx}", use_container_width=True):
+                                st.session_state[edit_key] = True
+                                st.rerun()
                     else:
                         with st.form(key=f"form_edit_aciklama_{d_no}_{d_idx}"):
-                            yeni_aciklama_input = st.text_area("İşlem / Açıklama Metni", value=ana_aciklama)
-                            col_f1, col_f2 = st.columns(2)
-                            with col_f1:
-                                submit_aciklama = st.form_submit_button("💾 Kaydet")
-                            with col_f2:
-                                cancel_aciklama = st.form_submit_button("❌ İptal")
-
+                            yeni_aciklama_val = st.text_area("Durum Detayını Güncelle", value=ana_aciklama, height=70)
+                            col_save, col_cancel = st.columns([1, 1])
+                            
+                            with col_save:
+                                submit_aciklama = st.form_submit_button("💾 Kaydet", use_container_width=True)
+                            with col_cancel:
+                                cancel_aciklama = st.form_submit_button("❌ İptal", use_container_width=True)
+                                
                             if submit_aciklama:
-                                bugun_str = simdi_dt.strftime("%d.%m.%Y %H:%M")
-                                dosya["Aciklama"] = yeni_aciklama_input
-                                dosya["Islemler"].append({"Tarih": bugun_str, "Islem": yeni_aciklama_input})
-                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} işlem eklendi")
+                                dosya["Aciklama"] = yeni_aciklama_val.strip()
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} dosyasının durum detayı güncellendi")
                                 st.session_state[edit_key] = False
-                                st.toast("✅ İşlem kaydedildi!")
+                                st.toast("✅ Durum detayı güncellendi!")
                                 st.rerun()
-                            elif cancel_aciklama:
+                                
+                            if cancel_aciklama:
                                 st.session_state[edit_key] = False
                                 st.rerun()
 
-                    # GEÇMİŞ İŞLEMLER LİSTESİ
+                    st.markdown(f"**➕ `{d_no}` Nolu Dosyaya Yeni İşlem Ekle**")
+                    with st.form(key=f"add_islem_form_main_{d_no}_{d_idx}", clear_on_submit=True):
+                        col_inp, col_btn = st.columns([3, 1], vertical_alignment="center")
+                        
+                        with col_inp:
+                            yeni_islem_text = st.text_input("İşlem Açıklaması", key=f"inp_{d_no}_{d_idx}", placeholder="Yapılan işlemi yazınız...", label_visibility="collapsed")
+                        
+                        with col_btn:
+                            submit_islem = st.form_submit_button("➕ İşlem Ekle", use_container_width=True)
+                            
+                        if submit_islem:
+                            if yeni_islem_text.strip() != "":
+                                simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
+                                
+                                islemler.append({
+                                    "Aciklama": yeni_islem_text.strip(),
+                                    "Tarih": simdi
+                                })
+                                
+                                verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} dosyasına yeni işlem eklendi")
+                                st.toast("✅ İşlem başarıyla eklendi!")
+                                st.rerun()
+                            else:
+                                st.warning("İşlem açıklaması boş olamaz.")
+
+                    st.markdown("**🕒 Dosyada bugüne kadar yapılan işlemler**")
                     if islemler:
-                        st.markdown("**Geçmiş İşlem Zaman Çizelgesi:**")
-                        for islem_item in reversed(islemler):
-                            i_tarih = islem_item.get("Tarih", "-")
-                            i_metin = islem_item.get("Islem", "")
-                            st.caption(f"🗓️ **{i_tarih}**: {i_metin}")
+                        for i_idx, item in enumerate(islemler):
+                            c_text, c_date, c_del = st.columns([5, 3, 1], vertical_alignment="center")
+                            
+                            with c_text:
+                                st.markdown(f"**{i_idx + 1}. Adım:** {item.get('Aciklama')}")
+                            
+                            with c_date:
+                                st.caption(f"🗓️ {item.get('Tarih')}")
+                            
+                            with c_del:
+                                if st.button("🗑️ Sil", key=f"del_main_{d_no}_{i_idx}", help="Bu işlemi sil"):
+                                    islemler.pop(i_idx)
+                                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} dosyasından işlem silindi")
+                                    st.toast("Silindi!")
+                                    st.rerun()
                     else:
-                        st.caption("*Henüz kayıtlı bir işlem yok.*")
-
+                        st.caption("*Henüz ilave bir işlem adımı eklenmedi.*")
+                st.write("") 
         else:
-            st.warning("Arama kriterinize uygun dosya bulunamadı.")
+            st.info("Arama kriterinize uygun dosya bulunamadı.")
     else:
-        st.info("Sistemde kayıtlı dosya bulunmamaktadır.")
+        st.info("Sistemde henüz kayıtlı dosya bulunmuyor.")
 
 # ==============================================================================
-# SAĞ TARAF: YENİ DOSYA EKLEME FORMU
+# SAĞ TARAF: VERİ GİRİŞİ, TOPLU İŞLEM, RAPORLAMA VE TÜMÜNÜ SİL PANELİ
 # ==============================================================================
 with col_right:
-    st.subheader("➕ Yeni Dosya Ekle")
+    st.subheader("📌 İşlem Paneli")
     
-    with st.form(key="form_yeni_dosya_ekle", clear_on_submit=True):
-        yeni_dosya_no = st.text_input("Dosya No", placeholder="Örn: 2025 D1 5400")
-        yeni_firma = st.text_input("Firma Adı", placeholder="Örn: ABC Dış Ticaret Ltd. Şti.")
-        yeni_aciklama = st.text_area("Açıklama / İlk İşlem", placeholder="Dosya ile ilgili ilk not veya durumu giriniz...")
-        
-        st.markdown("**İlk Durum Seçenekleri:**")
-        c_add1, c_add2 = st.columns(2)
-        with c_add1:
-            add_bagli = st.checkbox("🔗 Bağlı", value=False)
-            add_red = st.checkbox("🚫 Red", value=False)
-            add_tescilde = st.checkbox("⏳ Tescilde Bekleyen", value=False)
-            add_kapatma = st.checkbox("🏁 Kapatma Aşamasında", value=False)
-        with c_add2:
-            add_yazi = st.checkbox("✉️ Yazı Cevabı Bekleyen", value=False)
-            add_incelenmedi = st.checkbox("🔍 İncelenmedi", value=False)
-            add_incelemede = st.checkbox("🧐 İncelemede", value=False)
-            add_mail = st.checkbox("📧 Mail Atıldı", value=False)
+    tab_tekli, tab_excel, tab_rapor = st.tabs(["✏️ Tekli Ekle", "📋 Toplu Yapıştır", "📊 Rapor Oluştur"])
+    
+    with tab_tekli:
+        with st.form("yeni_dosya_formu_sag", clear_on_submit=True):
+            dosya_no = st.text_input("Dosya No / Adı (Örn: 2025 D1 5400)", placeholder="Örn: 2025 D1 5400")
+            firma = st.text_input("Firma Unvanı", placeholder="Örn: ISIK CELIK SAN.VE TIC.A.S.")
+            islem = st.text_area("Dosya Durum Detayı", placeholder="Detay metnini girin...", height=80)
             
-        btn_yeni_dosya = st.form_submit_button("➕ Dosyayı Kaydet", use_container_width=True)
-        
-        if btn_yeni_dosya:
-            if yeni_dosya_no.strip() != "":
-                # Aynı dosya numarasından var mı kontrolü
-                var_mi = any(d.get("Dosya No", "").strip().lower() == yeni_dosya_no.strip().lower() for d in kayitlar)
-                if var_mi:
-                    st.error("Bu dosya numarası zaten kayıtlı!")
-                else:
-                    bugun_tarih = simdi_dt.strftime("%d.%m.%Y %H:%M")
-                    ilk_islemler = []
-                    if yeni_aciklama.strip() != "":
-                        ilk_islemler.append({"Tarih": bugun_tarih, "Islem": yeni_aciklama.strip()})
+            c_in1, c_in2 = st.columns(2)
+            with c_in1:
+                bagli_durumu_input = st.checkbox("🔗 Bağlı Dosya")
+                tescilde_durumu_input = st.checkbox("⏳ Tescilde Bekleyen")
+                yazi_cevabi_input = st.checkbox("✉️ Yazı Cevabı Bekleyen")
+                incelenmedi_input = st.checkbox("🔍 İncelenmedi")
+            with c_in2:
+                kapatma_red_input = st.checkbox("❌ Kapatma Red")
+                kapatma_asamasinda_input = st.checkbox("🏁 Kapatma Aşamasında")
+                incelemede_input = st.checkbox("🧐 İncelemede")
+                mail_atildi_input = st.checkbox("📧 Firmaya Mail Atıldı")
+                
+            mail_tarihi_input = st.text_input("Mail Tarihi (Opsiyonel)", value=datetime.now().strftime("%d.%m.%Y"), placeholder="GG.AA.YYYY")
+
+            submit_yeni = st.form_submit_button("📂 Dosya Oluştur / Güncelle", use_container_width=True)
+
+            if submit_yeni:
+                if dosya_no.strip() != "":
+                    clean_dosya = dosya_no.strip()
+                    clean_firma = firma.strip() if firma.strip() != "" else "-"
+                    clean_aciklama = islem.strip()
+                    simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
+
+                    mevcut = next((d for d in kayitlar if str(d.get("Dosya No")) == clean_dosya), None)
                     
-                    yeni_kayit = {
-                        "Dosya No": yeni_dosya_no.strip(),
-                        "Firma": yeni_firma.strip(),
-                        "Aciklama": yeni_aciklama.strip(),
-                        "OlusturmaTarihi": bugun_tarih,
-                        "Islemler": ilk_islemler,
-                        "BagliDosya": add_bagli,
-                        "KapatmaRed": add_red,
-                        "TescildeBekleyen": add_tescilde,
-                        "KapatmaAsamasinda": add_kapatma,
-                        "YaziCevabiBekleyen": add_yazi,
-                        "Incelenmedi": add_incelenmedi,
-                        "Incelemede": add_incelemede,
-                        "MailAtildi": add_mail,
-                        "MailTarihi": bugun_tarih[:10] if add_mail else "",
-                        "SiraNo": 9999,
-                        "IncelenmediSiraNo": 9999,
-                        "IncelemedeSiraNo": 9999
-                    }
-                    
-                    kayitlar.append(yeni_kayit)
-                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"Yeni dosya eklendi: {yeni_dosya_no}")
-                    st.success(f"✅ '{yeni_dosya_no}' nolu dosya başarıyla eklendi!")
+                    if mevcut:
+                        if clean_aciklama != "":
+                            mevcut["Aciklama"] = clean_aciklama
+                        if clean_firma != "-" and clean_firma != "":
+                            mevcut["Firma"] = clean_firma
+                        mevcut["BagliDosya"] = bagli_durumu_input
+                        mevcut["KapatmaRed"] = kapatma_red_input
+                        mevcut["TescildeBekleyen"] = tescilde_durumu_input
+                        mevcut["KapatmaAsamasinda"] = kapatma_asamasinda_input
+                        mevcut["YaziCevabiBekleyen"] = yazi_cevabi_input
+                        mevcut["Incelenmedi"] = incelenmedi_input
+                        mevcut["Incelemede"] = incelemede_input
+                        mevcut["MailAtildi"] = mail_atildi_input
+                        mevcut["MailTarihi"] = mail_tarihi_input.strip() if mail_atildi_input else ""
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{clean_dosya} dosyasının bilgileri güncellendi")
+                        st.toast(f"✅ '{clean_dosya}' güncellendi!")
+                    else:
+                        yeni_dosya = {
+                            "Dosya No": clean_dosya,
+                            "Firma": clean_firma,
+                            "Aciklama": clean_aciklama,
+                            "BagliDosya": bagli_durumu_input,
+                            "KapatmaRed": kapatma_red_input,
+                            "TescildeBekleyen": tescilde_durumu_input,
+                            "KapatmaAsamasinda": kapatma_asamasinda_input,
+                            "YaziCevabiBekleyen": yazi_cevabi_input,
+                            "Incelenmedi": incelenmedi_input,
+                            "Incelemede": incelemede_input,
+                            "MailAtildi": mail_atildi_input,
+                            "MailTarihi": mail_tarihi_input.strip() if mail_atildi_input else "",
+                            "OlusturmaTarihi": simdi,
+                            "SiraNo": 9999,
+                            "IncelenmediSiraNo": 9999,
+                            "IncelemedeSiraNo": 9999,
+                            "Islemler": []
+                        }
+                        kayitlar.append(yeni_dosya)
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"Yeni dosya eklendi: {clean_dosya}")
+                        st.toast(f"✅ '{clean_dosya}' oluşturuldu!")
                     st.rerun()
-            else:
-                st.warning("Lütfen bir Dosya No giriniz.")
+                else:
+                    st.warning("Lütfen Dosya No alanını doldurulun.")
+
+    with tab_excel:
+        st.caption("Excel'deki **5 Sütunluk** veriyi buraya yapıştırabilirsiniz:")
+        st.caption("`DIIBNO1` | `DIIBNO2` | `DIIBNO3` | `Firma Unvanı` | `Durum Detayı`")
+        
+        with st.form("excel_paste_form", clear_on_submit=True):
+            pasted_data = st.text_area("Excel Verisini Yapıştırın", placeholder="2025\tD1\t5400\tISIK CELIK SAN.VE TIC.A.S.\tİnceleme yapılıyor.", height=120)
+            submit_excel = st.form_submit_button("⚡ Toplu Verileri Kaydet", use_container_width=True)
+            
+            if submit_excel:
+                if pasted_data.strip() != "":
+                    eklenen_sayi = 0
+                    lines = pasted_data.strip().split("\n")
+                    for line in lines:
+                        parts = line.split("\t")
+                        if len(parts) >= 4:
+                            sutun1 = parts[0].strip()
+                            sutun2 = parts[1].strip()
+                            sutun3 = parts[2].strip()
+                            c_firma = parts[3].strip()
+                            c_aciklama = parts[4].strip() if len(parts) >= 5 else ""
+                            
+                            c_dno = " ".join(filter(None, [sutun1, sutun2, sutun3]))
+                            simdi = datetime.now(turkey_tz).strftime("%Y-%m-%d %H:%M:%S")
+                            
+                            if c_dno:
+                                mevcut = next((d for d in kayitlar if str(d.get("Dosya No")) == c_dno), None)
+                                if mevcut:
+                                    if c_aciklama:
+                                        mevcut["Aciklama"] = c_aciklama
+                                    if c_firma and mevcut.get("Firma") in ["-", ""]:
+                                        mevcut["Firma"] = c_firma
+                                else:
+                                    kayitlar.append({
+                                        "Dosya No": c_dno,
+                                        "Firma": c_firma if c_firma else "-",
+                                        "Aciklama": c_aciklama,
+                                        "BagliDosya": False,
+                                        "KapatmaRed": False,
+                                        "TescildeBekleyen": False,
+                                        "KapatmaAsamasinda": False,
+                                        "YaziCevabiBekleyen": False,
+                                        "Incelenmedi": False,
+                                        "Incelemede": False,
+                                        "MailAtildi": False,
+                                        "MailTarihi": "",
+                                        "OlusturmaTarihi": simdi,
+                                        "SiraNo": 9999,
+                                        "IncelenmediSiraNo": 9999,
+                                        "IncelemedeSiraNo": 9999,
+                                        "Islemler": []
+                                    })
+                                eklenen_sayi += 1
+                                
+                    if eklenen_sayi > 0:
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"Excel'den {eklenen_sayi} adet kayıt eklendi")
+                        st.toast(f"✅ Toplam {eklenen_sayi} adet dosya kaydı işlendi!")
+                        st.rerun()
+                    else:
+                        st.warning("Geçerli formatta veri bulunamadı.")
+                else:
+                    st.warning("Yapıştırılan alan boş olamaz.")
+
+    with tab_rapor:
+        st.caption("Firma Unvanı ve Başlıklar olmaksızın 4 Sütunlu (DIIBNO1, DIIBNO2, DIIBNO3, Durum Detayı) rapor oluşturur.")
+        
+        col_rapor, col_temizle = st.columns(2)
+        
+        with col_rapor:
+            if st.button("📊 Rapor Oluştur", use_container_width=True):
+                if kayitlar:
+                    rapor_satirlari = []
+                    rapor_metni_list = []
+                    
+                    for dosya in kayitlar:
+                        d_no = dosya.get("Dosya No", "")
+                        ana_aciklama = dosya.get("Aciklama", "")
+                        islemler = dosya.get("Islemler", [])
+                        
+                        parcalar = d_no.split(" ")
+                        d1 = parcalar[0] if len(parcalar) > 0 else ""
+                        d2 = parcalar[1] if len(parcalar) > 1 else ""
+                        d3 = " ".join(parcalar[2:]) if len(parcalar) > 2 else ""
+                        
+                        tum_aciklamalar = []
+                        if ana_aciklama.strip() != "":
+                            tum_aciklamalar.append(ana_aciklama.strip())
+                        
+                        for item in islemler:
+                            if item.get("Aciklama"):
+                                tum_aciklamalar.append(item.get("Aciklama").strip())
+                        
+                        final_aciklama = " | ".join(tum_aciklamalar)
+                        
+                        # Excel tablosu için liste verisi (Başlıksız)
+                        rapor_satirlari.append([d1, d2, d3, final_aciklama])
+                        
+                        # Kopyalanabilir metin
+                        rapor_metni_list.append(f"{d1}\t{d2}\t{d3}\t{final_aciklama}")
+                    
+                    # Metin çıktısı
+                    st.session_state["rapor_cikti"] = "\n".join(rapor_metni_list)
+                    
+                    # Excel dosyası üretimi (Başlıksız)
+                    df = pd.DataFrame(rapor_satirlari)
+                    output = io.BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        df.to_excel(writer, index=False, header=False)
+                    st.session_state["rapor_excel_bytes"] = output.getvalue()
+                else:
+                    st.info("Raporlanacak kayıtlı dosya bulunmuyor.")
+
+        with col_temizle:
+            if st.button("🧹 Temizle", use_container_width=True):
+                if "rapor_cikti" in st.session_state:
+                    st.session_state["rapor_cikti"] = ""
+                if "rapor_excel_bytes" in st.session_state:
+                    st.session_state["rapor_excel_bytes"] = None
+                st.rerun()
+
+        if "rapor_cikti" in st.session_state and st.session_state["rapor_cikti"]:
+            # Excel İndirme Butonu
+            if "rapor_excel_bytes" in st.session_state and st.session_state["rapor_excel_bytes"]:
+                st.download_button(
+                    label="📥 aciklamagir1.xlsx Olarak İndir",
+                    data=st.session_state["rapor_excel_bytes"],
+                    file_name="aciklamagir1.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True,
+                    type="primary"
+                )
+            
+            st.markdown("**Metin / Tablo Çıktısı:**")
+            st.caption("📋 Sağ üstteki **Kopyala** simgesine tıklayıp Excel sayfanıza doğrudan `Ctrl + V` ile yapıştırabilirsiniz.")
+            st.code(st.session_state["rapor_cikti"], language="text")
+
+    st.divider()
+    
+    st.markdown("##### ⚠️ Veritabanı Yönetimi")
+    
+    if "confirm_delete_all" not in st.session_state:
+        st.session_state.confirm_delete_all = False
+
+    if not st.session_state.confirm_delete_all:
+        if st.button("🚨 Tüm Dosyaları Sil", use_container_width=True, type="secondary"):
+            st.session_state.confirm_delete_all = True
+            st.rerun()
+    else:
+        st.error("Tüm veritabanı silinecek! Emin misiniz?")
+        col_evet, col_hayir = st.columns(2)
+        
+        with col_evet:
+            if st.button("✅ Evet, Tümünü Sil", type="primary", use_container_width=True):
+                verileri_kaydet([], [], [], VARSAYILAN_BOLUM_SIRASI, "Tüm dosyalar veritabanından silindi")
+                st.session_state.confirm_delete_all = False
+                if "rapor_cikti" in st.session_state:
+                    st.session_state["rapor_cikti"] = ""
+                if "rapor_excel_bytes" in st.session_state:
+                    st.session_state["rapor_excel_bytes"] = None
+                st.toast("✅ Tüm dosyalar silindi!")
+                st.rerun()
+                
+        with col_hayir:
+            if st.button("❌ İptal Et", use_container_width=True):
+                st.session_state.confirm_delete_all = False
+                st.rerun()
