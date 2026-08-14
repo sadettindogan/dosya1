@@ -184,14 +184,6 @@ def verileri_getir():
             if "SiraNo" not in item: item["SiraNo"] = 9999
             if "IncelenmediSiraNo" not in item: item["IncelenmediSiraNo"] = 9999
             if "IncelemedeSiraNo" not in item: item["IncelemedeSiraNo"] = 9999
-            # Ön İnceleme Veri Yapısı
-            if "OnInceleme" not in item or not isinstance(item["OnInceleme"], dict):
-                item["OnInceleme"] = {
-                    "Ekspertiz": False, "EkspertizKontrol": False,
-                    "OzelSart233": False, "OzelSart233Kontrol": False,
-                    "YMM": False, "YMMKontrol": False,
-                    "IIGU": False, "IIGUKontrol": False
-                }
             yeni_format_data.append(item)
             
         return yeni_format_data, onemli_notlar_data, hatirlatmalar_data, bolum_sirasi_data
@@ -606,14 +598,6 @@ with col_left:
                 mail_atildi_durumu = dosya.get("MailAtildi", False)
                 mail_tarihi_val = dosya.get("MailTarihi", "")
                 
-                # Ön İnceleme Sözlüğü
-                on_inc = dosya.get("OnInceleme", {
-                    "Ekspertiz": False, "EkspertizKontrol": False,
-                    "OzelSart233": False, "OzelSart233Kontrol": False,
-                    "YMM": False, "YMMKontrol": False,
-                    "IIGU": False, "IIGUKontrol": False
-                })
-                
                 edit_key = f"edit_aciklama_{d_no}_{d_idx}"
                 confirm_del_key = f"confirm_del_single_{d_no}_{d_idx}"
                 if edit_key not in st.session_state:
@@ -684,6 +668,23 @@ with col_left:
                     if ch_mail:
                         mail_tarih_giris = st.text_input("Mail Tarihi", value=mail_tarihi_val, placeholder="Örn: 12.08.2025", key=f"txt_mail_tarihi_{d_no}_{d_idx}")
 
+                    st.markdown("<div class='save-status-container'>", unsafe_allow_html=True)
+                    if st.button("💾 Durumu Kaydet", key=f"btn_save_status_{d_no}_{d_idx}"):
+                        dosya["BagliDosya"] = ch_bagli
+                        dosya["KapatmaRed"] = ch_red
+                        dosya["TescildeBekleyen"] = ch_tescilde
+                        dosya["KapatmaAsamasinda"] = ch_kapatma
+                        dosya["YaziCevabiBekleyen"] = ch_yazi
+                        dosya["Incelenmedi"] = ch_incelenmedi
+                        dosya["Incelemede"] = ch_incelemede
+                        dosya["MailAtildi"] = ch_mail
+                        dosya["MailTarihi"] = mail_tarih_giris if ch_mail else ""
+                        
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} durumu güncellendi")
+                        st.toast("✅ Durum güncellendi!")
+                        st.rerun()
+                    st.markdown("</div>", unsafe_allow_html=True)
+
                     st.markdown("---")
 
                     # İŞLEM EKLEME VEYA DÜZENLEME FORMU
@@ -715,85 +716,6 @@ with col_left:
                             elif cancel_aciklama:
                                 st.session_state[edit_key] = False
                                 st.rerun()
-
-                    st.markdown("---")
-
-                    # ==========================================================
-                    # ÖN İNCELEME BÖLÜMÜ (YENİ EKLENEN KISIM)
-                    # ==========================================================
-                    st.markdown("##### 🔎 Ön İnceleme Konuları")
-                    
-                    # 1. Ekspertiz Şartı
-                    c_oi1_l, c_oi1_r = st.columns([50, 50], vertical_alignment="center")
-                    with c_oi1_l:
-                        chk_eks = st.checkbox("1. Ekspertiz Şartı", value=on_inc.get("Ekspertiz", False), key=f"chk_eks_{d_no}_{d_idx}")
-                    with c_oi1_r:
-                        if chk_eks:
-                            chk_eks_ctrl = st.checkbox("Kontrol Edildi", value=on_inc.get("EkspertizKontrol", False), key=f"chk_eks_ctrl_{d_no}_{d_idx}")
-                        else:
-                            chk_eks_ctrl = False
-
-                    # 2. 233 NOlu Özel Şart
-                    c_oi2_l, c_oi2_r = st.columns([50, 50], vertical_alignment="center")
-                    with c_oi2_l:
-                        chk_233 = st.checkbox("2. 233 Nolu Özel Şart", value=on_inc.get("OzelSart233", False), key=f"chk_233_{d_no}_{d_idx}")
-                    with c_oi2_r:
-                        if chk_233:
-                            chk_233_ctrl = st.checkbox("Kontrol Edildi", value=on_inc.get("OzelSart233Kontrol", False), key=f"chk_233_ctrl_{d_no}_{d_idx}")
-                        else:
-                            chk_233_ctrl = False
-
-                    # 3. YMM
-                    c_oi3_l, c_oi3_r = st.columns([50, 50], vertical_alignment="center")
-                    with c_oi3_l:
-                        chk_ymm = st.checkbox("3. YMM", value=on_inc.get("YMM", False), key=f"chk_ymm_{d_no}_{d_idx}")
-                    with c_oi3_r:
-                        if chk_ymm:
-                            chk_ymm_ctrl = st.checkbox("Kontrol Edildi", value=on_inc.get("YMMKontrol", False), key=f"chk_ymm_ctrl_{d_no}_{d_idx}")
-                        else:
-                            chk_ymm_ctrl = False
-
-                    # 4. İİGÜ
-                    c_oi4_l, c_oi4_r = st.columns([50, 50], vertical_alignment="center")
-                    with c_oi4_l:
-                        chk_iigu = st.checkbox("4. İİGÜ", value=on_inc.get("IIGU", False), key=f"chk_iigu_{d_no}_{d_idx}")
-                    with c_oi4_r:
-                        if chk_iigu:
-                            chk_iigu_ctrl = st.checkbox("Kontrol Edildi", value=on_inc.get("IIGUKontrol", False), key=f"chk_iigu_ctrl_{d_no}_{d_idx}")
-                        else:
-                            chk_iigu_ctrl = False
-
-                    st.markdown("<div class='save-status-container' style='margin-top: 10px;'>", unsafe_allow_html=True)
-                    if st.button("💾 Tüm Durumu / Ön İncelemeyi Kaydet", key=f"btn_save_status_{d_no}_{d_idx}"):
-                        # Durum Güncellemeleri
-                        dosya["BagliDosya"] = ch_bagli
-                        dosya["KapatmaRed"] = ch_red
-                        dosya["TescildeBekleyen"] = ch_tescilde
-                        dosya["KapatmaAsamasinda"] = ch_kapatma
-                        dosya["YaziCevabiBekleyen"] = ch_yazi
-                        dosya["Incelenmedi"] = ch_incelenmedi
-                        dosya["Incelemede"] = ch_incelemede
-                        dosya["MailAtildi"] = ch_mail
-                        dosya["MailTarihi"] = mail_tarih_giris if ch_mail else ""
-                        
-                        # Ön İnceleme Güncellemeleri
-                        dosya["OnInceleme"] = {
-                            "Ekspertiz": chk_eks,
-                            "EkspertizKontrol": chk_eks_ctrl,
-                            "OzelSart233": chk_233,
-                            "OzelSart233Kontrol": chk_233_ctrl,
-                            "YMM": chk_ymm,
-                            "YMMKontrol": chk_ymm_ctrl,
-                            "IIGU": chk_iigu,
-                            "IIGUKontrol": chk_iigu_ctrl
-                        }
-                        
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{d_no} durumu ve ön incelemesi güncellendi")
-                        st.toast("✅ Durum ve Ön İnceleme kaydedildi!")
-                        st.rerun()
-                    st.markdown("</div>", unsafe_allow_html=True)
-
-                    st.markdown("---")
 
                     # GEÇMİŞ İŞLEMLER LİSTESİ
                     if islemler:
@@ -865,13 +787,7 @@ with col_right:
                         "MailTarihi": bugun_tarih[:10] if add_mail else "",
                         "SiraNo": 9999,
                         "IncelenmediSiraNo": 9999,
-                        "IncelemedeSiraNo": 9999,
-                        "OnInceleme": {
-                            "Ekspertiz": False, "EkspertizKontrol": False,
-                            "OzelSart233": False, "OzelSart233Kontrol": False,
-                            "YMM": False, "YMMKontrol": False,
-                            "IIGU": False, "IIGUKontrol": False
-                        }
+                        "IncelemedeSiraNo": 9999
                     }
                     
                     kayitlar.append(yeni_kayit)
