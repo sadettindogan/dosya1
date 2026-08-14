@@ -290,7 +290,12 @@
       "Firma": "ALBAYRAK DEMİR ÇELİK VE LOJİSTİK YAPI MALZEMELERİ SANAYİ TİCARET ANONİM ŞİRKETİ",
       "Aciklama": "Yurt içine satış yapılmış olup kapanmayan bağlı belgeleri mevcuttur. 05.05.2026 Bağlı belgesi 2024/D1-06358 açık.",
       "OlusturmaTarihi": "2026-08-12 12:03:48",
-      "Islemler": [],
+      "Islemler": [
+        {
+          "Tarih": "14.08.2026 10:40",
+          "Islem": "14.08.2026 da Hülya hanımla görüşüldü.2024/D1-06358 açık olduğu söylendi."
+        }
+      ],
       "BagliDosya": true,
       "KapatmaRed": false,
       "TescildeBekleyen": false,
