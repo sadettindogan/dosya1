@@ -1,5 +1,0 @@
-streamlit
-pandas
-PyGithub
-pytz
-openpyxl
