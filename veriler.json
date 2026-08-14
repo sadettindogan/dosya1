@@ -794,7 +794,9 @@
       "IncelemedeSiraNo": 9999
     }
   ],
-  "OnemliNotlar": [],
+  "OnemliNotlar": [
+    "has çelik mail inceleecek"
+  ],
   "Hatirlatmalar": [],
   "BolumSirasi": [
     "kapatma",
