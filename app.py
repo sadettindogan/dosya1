@@ -1,4 +1,43 @@
 import streamlit as st
+
+# 1. Şifre doğrulama fonksiyonu
+def check_password():
+    """Doğru şifre girildiğinde True döner."""
+    def password_entered():
+        # Şifre kontrolü (Şifreyi secrets'tan veya doğrudan buradan alabilirsiniz)
+        if st.session_state["password"] == st.secrets.get("PASSWORD", "gizlisifre123"):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Güvenlik için şifreyi hafızadan sil
+        else:
+            st.session_state["password_correct"] = False
+
+    # Daha önce doğru girildiyse True döndür
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Şifre ekranını göster
+    st.title("🔒 Korumalı Alan")
+    st.text_input(
+        "Lütfen erişim şifresini girin:", 
+        type="password", 
+        on_change=password_entered, 
+        key="password"
+    )
+    
+    if "password_correct" in st.session_state and not st.session_state["password_correct"]:
+        st.error("❌ Hatalı şifre! Lütfen tekrar deneyin.")
+        
+    return False
+
+# 2. Şifre kontrolünü çalıştır
+if not check_password():
+    st.stop()  # Şifre doğru girilene kadar aşağıdaki kodların çalışmasını durdurır
+
+# =========================================================
+# BUNDAN SONRASI SİZİN MEVCUT UYGULAMA KODLARINIZDIR
+# =========================================================
+st.title("🎉 Hoş Geldiniz!")
+st.write("Bu içeriği sadece şifreyi doğru girenler görebilir.")import streamlit as st
 import pandas as pd
 from datetime import datetime
 import json
