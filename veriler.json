@@ -819,6 +819,25 @@
       "SiraNo": 9999,
       "IncelenmediSiraNo": 9999,
       "IncelemedeSiraNo": 9999
+    },
+    {
+      "Dosya No": "2023/D3-00191",
+      "Firma": "UNİTEK-ASOS ADİ ORTAKLIĞI",
+      "Aciklama": "Dys ye girilmeyen Yurt içi satış faturaları vrdır.satırkodu değişikliği sonrasında faturlar sisteme girilecektir.sarfiyat daha sonra artıya geçecek.",
+      "OlusturmaTarihi": "2026-08-28 16:31:43",
+      "Islemler": [],
+      "BagliDosya": false,
+      "KapatmaRed": false,
+      "TescildeBekleyen": false,
+      "KapatmaAsamasinda": false,
+      "YaziCevabiBekleyen": false,
+      "Incelenmedi": false,
+      "Incelemede": false,
+      "MailAtildi": false,
+      "MailTarihi": "",
+      "SiraNo": 9999,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     }
   ],
   "OnemliNotlar": [
