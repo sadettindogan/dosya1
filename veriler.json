@@ -199,7 +199,7 @@
       "Incelenmedi": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 0,
+      "SiraNo": 1,
       "Incelemede": false,
       "IncelenmediSiraNo": 9999,
       "IncelemedeSiraNo": 9999
@@ -854,7 +854,7 @@
       "Incelemede": false,
       "MailAtildi": false,
       "MailTarihi": "",
-      "SiraNo": 1,
+      "SiraNo": 0,
       "IncelenmediSiraNo": 9999,
       "IncelemedeSiraNo": 9999
     }
