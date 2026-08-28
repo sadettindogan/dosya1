@@ -831,7 +831,7 @@
       "TescildeBekleyen": false,
       "KapatmaAsamasinda": false,
       "YaziCevabiBekleyen": false,
-      "Incelenmedi": false,
+      "Incelenmedi": true,
       "Incelemede": false,
       "MailAtildi": false,
       "MailTarihi": "",
