@@ -43,7 +43,12 @@
       "Firma": "BOZANKAYA OTOMOTİV MAKİNA İMALAT İTHALAT VE İHRACAT ANONİM ŞİRKETİ",
       "Aciklama": "İncelenmedi-Yurda gelen eşya miktarını kontrol et",
       "OlusturmaTarihi": "2026-08-12 12:03:48",
-      "Islemler": [],
+      "Islemler": [
+        {
+          "Tarih": "28.08.2026 11:48",
+          "Islem": "serdal şahin ilgileniyor .gidenden fazla geri gelmiş Halit Hasırcı bizimle görüşsünler demiş."
+        }
+      ],
       "BagliDosya": false,
       "KapatmaRed": false,
       "TescildeBekleyen": false,
