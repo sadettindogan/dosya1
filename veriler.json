@@ -119,7 +119,12 @@
       "Firma": "ERCİYAS ÇELİK BORU SANAYİ A.Ş",
       "Aciklama": "03.06.2026 da ihracat yapılması amacıyla kapatma talebi reddedilmiştir.",
       "OlusturmaTarihi": "2026-08-12 12:03:48",
-      "Islemler": [],
+      "Islemler": [
+        {
+          "Tarih": "28.08.2026 10:55",
+          "Islem": "dosyadan dilekçe ile evraklar teslim alındı."
+        }
+      ],
       "BagliDosya": false,
       "KapatmaRed": true,
       "TescildeBekleyen": false,
