@@ -838,25 +838,6 @@
       "SiraNo": 9999,
       "IncelenmediSiraNo": 9999,
       "IncelemedeSiraNo": 9999
-    },
-    {
-      "Dosya No": "2026/D1-00629",
-      "Firma": "Yolbulan",
-      "Aciklama": "İncelendi kapatma aşamasında",
-      "OlusturmaTarihi": "2026-08-28 16:35:30",
-      "Islemler": [],
-      "BagliDosya": false,
-      "KapatmaRed": false,
-      "TescildeBekleyen": false,
-      "KapatmaAsamasinda": true,
-      "YaziCevabiBekleyen": false,
-      "Incelenmedi": false,
-      "Incelemede": false,
-      "MailAtildi": false,
-      "MailTarihi": "",
-      "SiraNo": 0,
-      "IncelenmediSiraNo": 9999,
-      "IncelemedeSiraNo": 9999
     }
   ],
   "OnemliNotlar": [
