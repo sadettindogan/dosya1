@@ -71,7 +71,12 @@
       "Firma": "ASLAR PRES DOKUM SANAYI TICARET A.S.",
       "Aciklama": "Ön inceleme yapılmış olup, sarfiyat iki birimli olması nedeniyle öngörülenin gerçekleşene çekilmesi revizesi yapılması gerektiği firmaya anlatılmış firmada aynı tarihte revize müracaatı yapmıştır.Revize akabinde ekspertize göre tekrar kontrol edilmesi gerekmektedir.Tev yoktur.01.09.2026 ",
       "OlusturmaTarihi": "2026-08-12 12:03:48",
-      "Islemler": [],
+      "Islemler": [
+        {
+          "Tarih": "01.09.2026 15:35",
+          "Islem": "05388765848 Filiz hanım"
+        }
+      ],
       "BagliDosya": false,
       "KapatmaRed": false,
       "TescildeBekleyen": false,
