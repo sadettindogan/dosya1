@@ -214,7 +214,12 @@
       "Firma": "KOR METAL SANAYI VE TICARET A.S.",
       "Aciklama": "Tev Tablosu ve tev makbuz asılları bekleniyor.Ayrıca daha önce 2.birim sarfiyata göre kapatılan başka bir dosya olup aynı durum sözkonusu olduğundan konu değerlendirilip firmaya dönüş yapılacak.",
       "OlusturmaTarihi": "2026-08-12 12:03:48",
-      "Islemler": [],
+      "Islemler": [
+        {
+          "Tarih": "03.09.2026 14:52",
+          "Islem": "tev tablosunu firma mail attı.tev makbuzlarıda geldi incelenecek"
+        }
+      ],
       "BagliDosya": false,
       "KapatmaRed": false,
       "TescildeBekleyen": false,
