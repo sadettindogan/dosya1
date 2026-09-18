@@ -829,6 +829,25 @@
       "SiraNo": 9999,
       "IncelenmediSiraNo": 9999,
       "IncelemedeSiraNo": 9999
+    },
+    {
+      "Dosya No": "2024/D1-05929",
+      "Firma": "ALUFORM PEKİNTAŞ",
+      "Aciklama": "incelendi",
+      "OlusturmaTarihi": "2026-09-18 09:08:56",
+      "Islemler": [],
+      "BagliDosya": false,
+      "KapatmaRed": false,
+      "TescildeBekleyen": false,
+      "KapatmaAsamasinda": false,
+      "YaziCevabiBekleyen": false,
+      "Incelenmedi": false,
+      "Incelemede": false,
+      "MailAtildi": false,
+      "MailTarihi": "",
+      "SiraNo": 9999,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999
     }
   ],
   "OnemliNotlar": [
