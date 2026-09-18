@@ -800,7 +800,7 @@ with col_left:
         st.info("Henüz kayıtlı dosya bulunmamaktadır. Sağ taraftaki formdan yeni dosya ekleyebilirsiniz.")
 
 # ==============================================================================
-# SAĞ TARAF: YENİ DOSYA EKLEME VE VERİ YÖNETİMİ (EXCEL / JSON)
+# SAĞ TARAF: YENİ DOSYA EKLEME VE HIZLI DOSYA AÇIKLAMASI SORGULAMA
 # ==============================================================================
 with col_right:
     st.subheader("➕ Yeni Dosya Ekle")
@@ -863,10 +863,33 @@ with col_right:
 
     st.markdown("---")
     
-    # EXCEL VE YEDEK YÖNETİMİ
-    st.subheader("📊 Veri Aktarımı ve Yedekleme")
+    # 🔍 HIZLI DOSYA AÇIKLAMASI SORGULAMA PENCERESİ
+    st.subheader("🔍 Hızlı Dosya Açıklaması Gör")
+    sorgu_no = st.text_input("Dosya No Giriniz", "", placeholder="Örn: 2020 D1 5020", key="txt_sorgu_dosya_no")
 
-    # EXCEL İNDİRME (Dışa Aktarma)
+    if sorgu_no.strip():
+        # Eşleşen dosyayı bul (büyük/küçük harf ve boşluk duyarsız)
+        arandigi_gibi = sorgu_no.strip().lower()
+        bulunan_dosya = next((d for d in kayitlar if d.get("Dosya No", "").strip().lower() == arandigi_gibi), None)
+        
+        if bulunan_dosya:
+            f_adi = bulunan_dosya.get("Firma", "-")
+            f_aciklama = bulunan_dosya.get("Aciklama", "")
+            
+            st.markdown(f"**🏢 Firma:** `{f_adi}`")
+            st.markdown("**📝 Ana Açıklama / Not:**")
+            if f_aciklama:
+                st.info(f_aciklama)
+            else:
+                st.warning("Bu dosyaya ait herhangi bir **Ana Açıklama / Not** bulunmuyor.")
+        else:
+            st.error(f"❌ **'{sorgu_no.strip()}'** numaralı dosya sistemde bulunamadı.")
+
+    st.markdown("---")
+
+    # JSON VE EXCEL İNDİRME / YEDEKLEME
+    st.subheader("📊 Veri İndir ve Yedekle")
+
     if kayitlar:
         excel_listesi = []
         for d in kayitlar:
@@ -906,7 +929,6 @@ with col_right:
             use_container_width=True
         )
 
-    # JSON YEDEK İNDİRME
     json_str = json.dumps({
         "Dosyalar": kayitlar,
         "OnemliNotlar": mevcut_onemli_notlar,
@@ -921,76 +943,3 @@ with col_right:
         mime="application/json",
         use_container_width=True
     )
-
-    st.markdown("---")
-
-    # EXCEL / JSON YÜKLEME (İçe Aktarma)
-    st.markdown("**📤 Toplu Veri Yükle / Geri Yükle**")
-    uploaded_file = st.file_uploader("Excel (.xlsx) veya JSON (.json) Yükle", type=["xlsx", "json"])
-
-    if uploaded_file is not None:
-        if st.button("⚠️ Yüklenen Verileri Uygula ve Üzerine Yaz", type="primary", use_container_width=True):
-            try:
-                if uploaded_file.name.endswith('.json'):
-                    imported_json = json.loads(uploaded_file.getvalue().decode('utf-8'))
-                    if isinstance(imported_json, dict):
-                        imp_dosyalar = imported_json.get("Dosyalar", [])
-                        imp_notlar = imported_json.get("OnemliNotlar", [])
-                        imp_hatirlatmalar = imported_json.get("Hatirlatmalar", [])
-                        imp_bolum_sirasi = imported_json.get("BolumSirasi", VARSAYILAN_BOLUM_SIRASI)
-                    else:
-                        imp_dosyalar = imported_json if isinstance(imported_json, list) else []
-                        imp_notlar = []
-                        imp_hatirlatmalar = []
-                        imp_bolum_sirasi = VARSAYILAN_BOLUM_SIRASI
-
-                    verileri_kaydet(imp_dosyalar, imp_notlar, imp_hatirlatmalar, imp_bolum_sirasi, "JSON Yedeğinden Geri Yüklendi")
-                    st.success("JSON verileri başarıyla yüklendi!")
-                    st.rerun()
-
-                elif uploaded_file.name.endswith('.xlsx'):
-                    df_imp = pd.read_excel(uploaded_file)
-                    yeni_dosya_listesi = []
-
-                    for idx, row in df_imp.iterrows():
-                        d_no_val = str(row.get("Dosya No", "")).strip()
-                        if d_no_val and d_no_val != "nan":
-                            firma_val = str(row.get("Firma", "-")).strip()
-                            aciklama_val = str(row.get("Açıklama", "")).strip() if str(row.get("Açıklama", "")) != "nan" else ""
-                            
-                            bagli_val = True if str(row.get("Bağlı Dosya", "")).strip().lower() in ["evet", "true", "1"] else False
-                            red_val = True if str(row.get("Kapatma Red", "")).strip().lower() in ["evet", "true", "1"] else False
-                            tescilde_val = True if str(row.get("Tescilde Bekleyen", "")).strip().lower() in ["evet", "true", "1"] else False
-                            kapatma_val = True if str(row.get("Kapatma Aşamasında", "")).strip().lower() in ["evet", "true", "1"] else False
-                            yazi_val = True if str(row.get("Yazı Cevabı Bekleyen", "")).strip().lower() in ["evet", "true", "1"] else False
-                            incelenmedi_val = True if str(row.get("İncelenmedi", "")).strip().lower() in ["evet", "true", "1"] else False
-                            incelemede_val = True if str(row.get("İncelemede", "")).strip().lower() in ["evet", "true", "1"] else False
-                            mail_val = True if str(row.get("Mail Atıldı", "")).strip().lower() in ["evet", "true", "1"] else False
-                            mail_tarihi_str_val = str(row.get("Mail Tarihi", "")).strip() if str(row.get("Mail Tarihi", "")) != "nan" else ""
-
-                            yeni_dosya_listesi.append({
-                                "Dosya No": d_no_val,
-                                "Firma": firma_val if firma_val != "nan" else "-",
-                                "Aciklama": aciklama_val,
-                                "OlusturmaTarihi": simdi_dt.strftime("%Y-%m-%d %H:%M:%S"),
-                                "Islemler": [],
-                                "BagliDosya": bagli_val,
-                                "KapatmaRed": red_val,
-                                "TescildeBekleyen": tescilde_val,
-                                "KapatmaAsamasinda": kapatma_val,
-                                "YaziCevabiBekleyen": yazi_val,
-                                "Incelenmedi": incelenmedi_val,
-                                "Incelemede": incelemede_val,
-                                "MailAtildi": mail_val,
-                                "MailTarihi": mail_tarihi_str_val,
-                                "SiraNo": 9999,
-                                "IncelenmediSiraNo": 9999,
-                                "IncelemedeSiraNo": 9999
-                            })
-
-                    verileri_kaydet(yeni_dosya_listesi, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, "Excel'den Toplu İçe Aktarma Yapıldı")
-                    st.success(f"Excel'den {len(yeni_dosya_listesi)} dosya başarıyla aktarıldı!")
-                    st.rerun()
-
-            except Exception as e:
-                st.error(f"Veri yüklenirken hata oluştu: {str(e)}")
