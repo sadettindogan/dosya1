@@ -863,25 +863,53 @@ with col_right:
 
     st.markdown("---")
     
-    # 🔍 HIZLI DOSYA AÇIKLAMASI SORGULAMA PENCERESİ
+    # 🔍 HIZLI DOSYA AÇIKLAMASI SORGULAMA PENCERESİ (DÜZENLE & KAYDET EKLENDİ)
     st.subheader("🔍 Hızlı Dosya Açıklaması Gör")
     sorgu_no = st.text_input("Dosya No Giriniz", "", placeholder="Örn: 2020 D1 5020", key="txt_sorgu_dosya_no")
 
     if sorgu_no.strip():
-        # Eşleşen dosyayı bul (büyük/küçük harf ve boşluk duyarsız)
         arandigi_gibi = sorgu_no.strip().lower()
         bulunan_dosya = next((d for d in kayitlar if d.get("Dosya No", "").strip().lower() == arandigi_gibi), None)
         
         if bulunan_dosya:
+            f_dno = bulunan_dosya.get("Dosya No", "")
             f_adi = bulunan_dosya.get("Firma", "-")
             f_aciklama = bulunan_dosya.get("Aciklama", "")
             
             st.markdown(f"**🏢 Firma:** `{f_adi}`")
-            st.markdown("**📝 Ana Açıklama / Not:**")
-            if f_aciklama:
-                st.info(f_aciklama)
+            
+            quick_edit_key = f"quick_edit_{f_dno}"
+            if quick_edit_key not in st.session_state:
+                st.session_state[quick_edit_key] = False
+
+            col_q_title, col_q_btn = st.columns([75, 25], vertical_alignment="center")
+            with col_q_title:
+                st.markdown("**📝 Ana Açıklama / Not:**")
+            with col_q_btn:
+                if not st.session_state[quick_edit_key]:
+                    if st.button("✏️ Düzenle", key=f"btn_q_edit_{f_dno}"):
+                        st.session_state[quick_edit_key] = True
+                        st.rerun()
+
+            if st.session_state[quick_edit_key]:
+                yeni_q_aciklama = st.text_area("Açıklamayı Düzenle", value=f_aciklama, key=f"txt_q_area_{f_dno}")
+                cq_save, cq_cancel = st.columns([1, 1])
+                with cq_save:
+                    if st.button("💾 Kaydet", key=f"btn_q_save_{f_dno}", type="primary", use_container_width=True):
+                        bulunan_dosya["Aciklama"] = yeni_q_aciklama.strip()
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{f_dno} açıklaması hızlı sorgudan güncellendi")
+                        st.session_state[quick_edit_key] = False
+                        st.toast("✅ Açıklama güncellendi!")
+                        st.rerun()
+                with cq_cancel:
+                    if st.button("❌ İptal", key=f"btn_q_cancel_{f_dno}", use_container_width=True):
+                        st.session_state[quick_edit_key] = False
+                        st.rerun()
             else:
-                st.warning("Bu dosyaya ait herhangi bir **Ana Açıklama / Not** bulunmuyor.")
+                if f_aciklama:
+                    st.info(f_aciklama)
+                else:
+                    st.warning("Bu dosyaya ait herhangi bir **Ana Açıklama / Not** bulunmuyor.")
         else:
             st.error(f"❌ **'{sorgu_no.strip()}'** numaralı dosya sistemde bulunamadı.")
 
