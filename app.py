@@ -579,8 +579,8 @@ for col_idx, bolum_kodu in enumerate(mevcut_bolum_sirasi):
 
 st.markdown("---")
 
-# EKRAN YAPILANDIRMASI: Sol Taraf %65, Sağ Taraf %35
-col_left, col_right = st.columns([65, 35], gap="large")
+# EKRAN YAPILANDIRMASI: Sol Taraf %60, Sağ Taraf %40
+col_left, col_right = st.columns([60, 40], gap="large")
 
 # ==============================================================================
 # SOL TARAF: GENİŞ DOSYA LİSTESİ VE GEÇMİŞ İŞLEMLER
@@ -800,7 +800,7 @@ with col_left:
         st.info("Henüz kayıtlı dosya bulunmamaktadır. Sağ taraftaki formdan yeni dosya ekleyebilirsiniz.")
 
 # ==============================================================================
-# SAĞ TARAF: YENİ DOSYA EKLEME VE HIZLI DOSYA AÇIKLAMASI SORGULAMA
+# SAĞ TARAF: YENİ DOSYA EKLEME, EXCEL YÜKLEME VE TOPLU SORGULAMA/DÜZENLEME
 # ==============================================================================
 with col_right:
     st.subheader("➕ Yeni Dosya Ekle")
@@ -821,7 +821,6 @@ with col_right:
 
         if submit_yeni_dosya:
             if yeni_dosya_no.strip() != "":
-                # Aynı dosya no kontrolü
                 zaten_var = any(d.get("Dosya No", "").strip().lower() == yeni_dosya_no.strip().lower() for d in kayitlar)
                 
                 if zaten_var:
@@ -862,56 +861,129 @@ with col_right:
                 st.error("Lütfen Dosya No alanını doldurunuz.")
 
     st.markdown("---")
-    
-    # 🔍 HIZLI DOSYA AÇIKLAMASI SORGULAMA PENCERESİ (DÜZENLE & KAYDET EKLENDİ)
-    st.subheader("🔍 Hızlı Dosya Açıklaması Gör")
-    sorgu_no = st.text_input("Dosya No Giriniz", "", placeholder="Örn: 2020 D1 5020", key="txt_sorgu_dosya_no")
 
-    if sorgu_no.strip():
-        arandigi_gibi = sorgu_no.strip().lower()
-        bulunan_dosya = next((d for d in kayitlar if d.get("Dosya No", "").strip().lower() == arandigi_gibi), None)
-        
-        if bulunan_dosya:
-            f_dno = bulunan_dosya.get("Dosya No", "")
-            f_adi = bulunan_dosya.get("Firma", "-")
-            f_aciklama = bulunan_dosya.get("Aciklama", "")
+    # 📑 EXCEL İLE TOPLU DOSYA AÇIKLAMASI GÜNCELLEME
+    st.subheader("📑 Excel İle Toplu Açıklama Güncelle")
+    st.caption("İçinde **Dosya No** ve **Açıklama** sütunları olan bir Excel dosyası (.xlsx) yükleyiniz.")
+
+    uploaded_file = st.file_uploader("Excel Dosyası Seçin", type=["xlsx", "xls"], key="excel_updater_input")
+
+    if uploaded_file is not None:
+        try:
+            df_upload = pd.read_excel(uploaded_file)
             
-            st.markdown(f"**🏢 Firma:** `{f_adi}`")
+            # Sütun isimlerini esnek kontrol etme (boşluk temizleme)
+            df_upload.columns = [str(col).strip() for col in df_upload.columns]
             
-            quick_edit_key = f"quick_edit_{f_dno}"
-            if quick_edit_key not in st.session_state:
-                st.session_state[quick_edit_key] = False
+            # Kolon başlıklarını esnek yakalama
+            dosya_no_col = next((c for c in df_upload.columns if c.lower() in ["dosya no", "dosyano", "dosya_no"]), None)
+            aciklama_col = next((c for c in df_upload.columns if c.lower() in ["açıklama", "aciklama", "not", "ana açıklama"]), None)
 
-            col_q_title, col_q_btn = st.columns([75, 25], vertical_alignment="center")
-            with col_q_title:
-                st.markdown("**📝 Ana Açıklama / Not:**")
-            with col_q_btn:
-                if not st.session_state[quick_edit_key]:
-                    if st.button("✏️ Düzenle", key=f"btn_q_edit_{f_dno}"):
-                        st.session_state[quick_edit_key] = True
-                        st.rerun()
+            if dosya_no_col and aciklama_col:
+                st.success(f"✅ Excel okundu: **{len(df_upload)}** satır veri bulundu.")
+                
+                # Önizleme tablosu
+                st.dataframe(df_upload[[dosya_no_col, aciklama_col]].head(5), use_container_width=True)
 
-            if st.session_state[quick_edit_key]:
-                yeni_q_aciklama = st.text_area("Açıklamayı Düzenle", value=f_aciklama, key=f"txt_q_area_{f_dno}")
-                cq_save, cq_cancel = st.columns([1, 1])
-                with cq_save:
-                    if st.button("💾 Kaydet", key=f"btn_q_save_{f_dno}", type="primary", use_container_width=True):
-                        bulunan_dosya["Aciklama"] = yeni_q_aciklama.strip()
-                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{f_dno} açıklaması hızlı sorgudan güncellendi")
-                        st.session_state[quick_edit_key] = False
-                        st.toast("✅ Açıklama güncellendi!")
-                        st.rerun()
-                with cq_cancel:
-                    if st.button("❌ İptal", key=f"btn_q_cancel_{f_dno}", use_container_width=True):
-                        st.session_state[quick_edit_key] = False
+                if st.button("🚀 Excel'deki Verilerle Açıklamaları Güncelle", type="primary", use_container_width=True):
+                    guncellenen_sayi = 0
+                    bulunamayanlar = []
+
+                    for _, row in df_upload.iterrows():
+                        target_no = str(row[dosya_no_col]).strip()
+                        yeni_aciklama = str(row[aciklama_col]).strip() if pd.notna(row[aciklama_col]) else ""
+
+                        if target_no:
+                            match = next((d for d in kayitlar if str(d.get("Dosya No", "")).strip().lower() == target_no.lower()), None)
+                            if match:
+                                match["Aciklama"] = yeni_aciklama
+                                guncellenen_sayi += 1
+                            else:
+                                bulunamayanlar.append(target_no)
+
+                    if guncellenen_sayi > 0:
+                        verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{guncellenen_sayi} dosya açıklaması Excel ile güncellendi")
+                        st.toast(f"✅ {guncellenen_sayi} adet dosya açıklaması başarıyla güncellendi!")
+                        
+                    if bulunamayanlar:
+                        st.warning(f"⚠️ Sistemde bulunamayan dosyalar ({len(bulunamayanlar)} adet): {', '.join(bulunamayanlar)}")
+                    
+                    if guncellenen_sayi > 0:
                         st.rerun()
             else:
-                if f_aciklama:
-                    st.info(f_aciklama)
-                else:
-                    st.warning("Bu dosyaya ait herhangi bir **Ana Açıklama / Not** bulunmuyor.")
-        else:
-            st.error(f"❌ **'{sorgu_no.strip()}'** numaralı dosya sistemde bulunamadı.")
+                st.error("❌ Excel dosyasında 'Dosya No' ve 'Açıklama' sütunları bulunamadı. Lütfen sütun başlıklarınızı kontrol ediniz.")
+
+        except Exception as e:
+            st.error(f"Excel dosyası işlenirken bir hata oluştu: {e}")
+
+    st.markdown("---")
+    
+    # 🔍 MANUEL TOPLU DOSYA AÇIKLAMASI SORGULAMA VE DÜZENLEME MODÜLÜ
+    st.subheader("🔍 Toplu Dosya Açıklaması Gör / Düzenle")
+    st.caption("Birden fazla dosya numarasını **virgül (,)** veya **alt satıra (Enter)** geçerek yazabilirsiniz.")
+
+    toplu_sorgu_input = st.text_area(
+        "Dosya Numaralarını Giriniz", 
+        height=90, 
+        placeholder="Örn:\n2024 D1 414\n2025 D1 5400, 2023 D1 1012",
+        key="txt_toplu_sorgu_dosya_no"
+    )
+
+    if toplu_sorgu_input.strip():
+        ham_liste = toplu_sorgu_input.replace(",", "\n").split("\n")
+        aranan_dosya_nolari = [d.strip() for d in ham_liste if d.strip()]
+        aranan_dosya_nolari = list(dict.fromkeys(aranan_dosya_nolari))
+
+        bulunan_dosyalar = []
+        bulunamayanlar = []
+
+        for target_no in aranan_dosya_nolari:
+            target_lower = target_no.lower()
+            match = next((d for d in kayitlar if d.get("Dosya No", "").strip().lower() == target_lower), None)
+            if match:
+                bulunan_dosyalar.append(match)
+            else:
+                bulunamayanlar.append(target_no)
+
+        if bulunamayanlar:
+            st.warning(f"⚠️ Bulunamayan Dosyalar ({len(bulunamayanlar)}): {', '.join(bulunamayanlar)}")
+
+        if bulunan_dosyalar:
+            st.info(f"📋 **{len(bulunan_dosyalar)}** adet dosya bulundu. Aşağıdan açıklamalarını düzenleyebilirsiniz:")
+            
+            with st.form(key="form_toplu_aciklama_kaydet"):
+                yeni_aciklamalar_dict = {}
+                
+                for b_idx, b_dosya in enumerate(bulunan_dosyalar):
+                    b_dno = b_dosya.get("Dosya No", "")
+                    b_firma = b_dosya.get("Firma", "-")
+                    b_aciklama = b_dosya.get("Aciklama", "")
+
+                    st.markdown(f"**📂 {b_dno}** | <small>Firma: {b_firma}</small>", unsafe_allow_html=True)
+                    
+                    yeni_val = st.text_area(
+                        label=f"Açıklama ({b_dno})",
+                        value=b_aciklama,
+                        key=f"toplu_txt_{b_dno}_{b_idx}",
+                        height=80,
+                        label_visibility="collapsed"
+                    )
+                    yeni_aciklamalar_dict[b_dno] = yeni_val
+                    st.markdown("<hr style='margin: 0.4rem 0 !important;'>", unsafe_allow_html=True)
+
+                submit_toplu_kaydet = st.form_submit_button("💾 Listelenen Tüm Dosya Açıklamalarını Kaydet", type="primary", use_container_width=True)
+
+                if submit_toplu_kaydet:
+                    guncellenen_sayisi = 0
+                    for b_dosya in bulunan_dosyalar:
+                        d_no_key = b_dosya.get("Dosya No", "")
+                        if d_no_key in yeni_aciklamalar_dict:
+                            b_dosya["Aciklama"] = yeni_aciklamalar_dict[d_no_key].strip()
+                            guncellenen_sayisi += 1
+                    
+                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"{guncellenen_sayisi} dosya açıklaması toplu güncellendi")
+                    st.toast(f"✅ {guncellenen_sayisi} adet dosya açıklaması başarıyla güncellendi!")
+                    st.rerun()
 
     st.markdown("---")
 
@@ -919,13 +991,11 @@ with col_right:
     st.subheader("📊 Veri İndir ve Yedekle")
 
     if kayitlar:
-        # Dosya No verisini parçalayarak tam 4 sütunlu özet liste oluşturma
         ozet_excel_listesi = []
         for d in kayitlar:
             tam_dosya_no = str(d.get("Dosya No", "")).strip()
             parcalar = tam_dosya_no.split()
             
-            # "2024 D1 414" gibi standart 3 parçalı yapı kontrolü
             yil = parcalar[0] if len(parcalar) > 0 else ""
             kod = parcalar[1] if len(parcalar) > 1 else ""
             sira_no = " ".join(parcalar[2:]) if len(parcalar) > 2 else ""
