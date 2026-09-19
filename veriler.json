@@ -1051,7 +1051,13 @@
     "has çelik mail",
     "ön inceleme yapıldı/…….( Eksikler) tespit"
   ],
-  "Hatirlatmalar": [],
+  "Hatirlatmalar": [
+    {
+      "Metin": "a",
+      "Zaman": "2026-09-20 01:05:00",
+      "Tamamlandi": false
+    }
+  ],
   "BolumSirasi": [
     "kapatma",
     "incelenmedi",
