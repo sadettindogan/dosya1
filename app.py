@@ -811,61 +811,81 @@ with col_right:
                     st.warning("Lütfen Dosya No alanını doldurun.")
 
     with tab2:
-        st.markdown("### 📥 1. Sistem Yedeğini İndir")
-        st.caption("Sitedeki tüm dosyaları, işlem geçmişlerini ve bayrak durumlarını Excel olarak indirir.")
+        st.markdown("### 📥 1. Tam Sistem Yedeğini İndir")
+        st.caption("Sitedeki tüm dosyaları, önemli notları, hatırlatmaları ve bölüm sıralamasını kapsayan tam Excel yedeğini indirir.")
         
-        if kayitlar:
-            export_b_list = []
-            for d in kayitlar:
-                islem_gecmisi_str = " | ".join([f"[{i.get('Tarih', '')}] {i.get('Metin', '')}" for i in d.get("Islemler", [])])
-                
-                export_b_list.append({
-                    "Dosya No": d.get("Dosya No", ""),
-                    "Firma": d.get("Firma", "-"),
-                    "Açıklama": d.get("Aciklama", ""),
-                    "Oluşturma Tarihi": d.get("OlusturmaTarihi", ""),
-                    "İşlem Geçmişi": islem_gecmisi_str,
-                    "Bağlı Dosya": "EVET" if d.get("BagliDosya") else "HAYIR",
-                    "Kapatma Red": "EVET" if d.get("KapatmaRed") else "HAYIR",
-                    "Tescilde Bekleyen": "EVET" if d.get("TescildeBekleyen") else "HAYIR",
-                    "Kapatma Aşamasında": "EVET" if d.get("KapatmaAsamasinda") else "HAYIR",
-                    "Yazı Cevabı Bekleyen": "EVET" if d.get("YaziCevabiBekleyen") else "HAYIR",
-                    "İncelenmedi": "EVET" if d.get("Incelenmedi") else "HAYIR",
-                    "İncelemede": "EVET" if d.get("Incelemede") else "HAYIR",
-                    "Mail Atıldı": "EVET" if d.get("MailAtildi") else "HAYIR",
-                    "Mail Tarihi": d.get("MailTarihi", ""),
-                    "Sıra No": d.get("SiraNo", 9999),
-                    "İncelenmedi Sıra No": d.get("IncelenmediSiraNo", 9999),
-                    "İncelemede Sıra No": d.get("IncelemedeSiraNo", 9999)
-                })
-            df_export_b = pd.DataFrame(export_b_list)
+        export_b_list = []
+        for d in kayitlar:
+            islem_gecmisi_str = " | ".join([f"[{i.get('Tarih', '')}] {i.get('Metin', '')}" for i in d.get("Islemler", [])])
             
-            out_b = io.BytesIO()
-            with pd.ExcelWriter(out_b, engine='xlsxwriter') as writer:
-                df_export_b.to_excel(writer, index=False, sheet_name='Sistem_Yedegi')
-            excel_b_data = out_b.getvalue()
+            export_b_list.append({
+                "Dosya No": d.get("Dosya No", ""),
+                "Firma": d.get("Firma", "-"),
+                "Açıklama": d.get("Aciklama", ""),
+                "Oluşturma Tarihi": d.get("OlusturmaTarihi", ""),
+                "İşlem Geçmişi": islem_gecmisi_str,
+                "Bağlı Dosya": "EVET" if d.get("BagliDosya") else "HAYIR",
+                "Kapatma Red": "EVET" if d.get("KapatmaRed") else "HAYIR",
+                "Tescilde Bekleyen": "EVET" if d.get("TescildeBekleyen") else "HAYIR",
+                "Kapatma Aşamasında": "EVET" if d.get("KapatmaAsamasinda") else "HAYIR",
+                "Yazı Cevabı Bekleyen": "EVET" if d.get("YaziCevabiBekleyen") else "HAYIR",
+                "İncelenmedi": "EVET" if d.get("Incelenmedi") else "HAYIR",
+                "İncelemede": "EVET" if d.get("Incelemede") else "HAYIR",
+                "Mail Atıldı": "EVET" if d.get("MailAtildi") else "HAYIR",
+                "Mail Tarihi": d.get("MailTarihi", ""),
+                "Sıra No": d.get("SiraNo", 9999),
+                "İncelenmedi Sıra No": d.get("IncelenmediSiraNo", 9999),
+                "İncelemede Sıra No": d.get("IncelemedeSiraNo", 9999)
+            })
+        df_dosyalar = pd.DataFrame(export_b_list)
+        
+        # ÖNEMLİ NOTLAR TABLOSU
+        df_notlar = pd.DataFrame([{"Not": n} for n in mevcut_onemli_notlar])
+        
+        # HATIRLATMALAR TABLOSU
+        df_hatirlatmalar = pd.DataFrame([
+            {
+                "Hatırlatma Metni": h.get("Metin", ""),
+                "Zaman": h.get("Zaman", ""),
+                "Tamamlandı": "EVET" if h.get("Tamamlandi") else "HAYIR"
+            } for h in mevcut_hatirlatmalar
+        ])
+        
+        # BÖLÜM SIRALAMASI TABLOSU
+        df_ayarlar = pd.DataFrame([{"Bölüm Sırası": ",".join(mevcut_bolum_sirasi)}])
+        
+        out_b = io.BytesIO()
+        with pd.ExcelWriter(out_b, engine='xlsxwriter') as writer:
+            df_dosyalar.to_excel(writer, index=False, sheet_name='Sistem_Yedegi')
+            df_notlar.to_excel(writer, index=False, sheet_name='Onemli_Notlar')
+            df_hatirlatmalar.to_excel(writer, index=False, sheet_name='Hatirlatmalar')
+            df_ayarlar.to_excel(writer, index=False, sheet_name='Sistem_Ayarlari')
             
-            st.download_button(
-                label="📥 Excel Yedeğini Bilgisayara İndir",
-                data=excel_b_data,
-                file_name=f"site_yedegi_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
-        else:
-            st.info("İndirilecek kayıtlı dosya bulunmuyor.")
+        excel_b_data = out_b.getvalue()
+        
+        st.download_button(
+            label="📥 Tam Sistem Yedeğini İndir (.xlsx)",
+            data=excel_b_data,
+            file_name=f"tam_sistem_yedegi_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
 
         st.markdown("---")
         
         st.markdown("### 📤 2. Excel Yedeğini Geri Yükle")
-        st.caption("Daha önce indirdiğiniz yedek Excel dosyasını seçerek siteyi o haline geri getirebilirsiniz.")
+        st.caption("Daha önce indirdiğiniz tam sistem Excel yedeğini seçerek siteyi o haline geri getirebilirsiniz.")
         
         uploaded_file = st.file_uploader("Yedek Excel Dosyası Seçin (.xlsx)", type=["xlsx", "xls"])
         
         if uploaded_file is not None:
             try:
-                df_std = pd.read_excel(uploaded_file)
-                st.dataframe(df_std.head(5), use_container_width=True)
+                excel_file = pd.ExcelFile(uploaded_file)
+                sheet_names = excel_file.sheet_names
+                
+                df_std = pd.read_excel(excel_file, sheet_name='Sistem_Yedegi') if 'Sistem_Yedegi' in sheet_names else pd.read_excel(excel_file, sheet_name=sheet_names[0])
+                st.write("**📄 Dosyalar Önizleme:**")
+                st.dataframe(df_std.head(3), use_container_width=True)
                 
                 if st.button("🚀 Excel Yedeğini Sisteme Yükle", type="primary", use_container_width=True):
                     eklenen, guncellenen = 0, 0
@@ -961,9 +981,45 @@ with col_right:
                             }
                             kayitlar.append(yeni_d)
                             eklenen += 1
-                            
-                    verileri_kaydet(kayitlar, mevcut_onemli_notlar, mevcut_hatirlatmalar, mevcut_bolum_sirasi, f"Excel Yükleme: {eklenen} eklendi, {guncellenen} güncellendi.")
-                    st.success(f"🎉 Yükleme Tamamlandı! ({eklenen} yeni dosya, {guncellenen} güncellenen dosya)")
+                    
+                    # 1. ÖNEMLİ NOTLARI YÜKLE
+                    yeni_notlar = mevcut_onemli_notlar
+                    if 'Onemli_Notlar' in sheet_names:
+                        df_not_file = pd.read_excel(excel_file, sheet_name='Onemli_Notlar')
+                        if not df_not_file.empty:
+                            col_n = df_not_file.columns[0]
+                            yeni_notlar = [str(x).strip() for x in df_not_file[col_n].dropna().tolist() if str(x).strip()]
+
+                    # 2. HATIRLATMALARI YÜKLE
+                    yeni_hatirlatmalar = mevcut_hatirlatmalar
+                    if 'Hatirlatmalar' in sheet_names:
+                        df_h_file = pd.read_excel(excel_file, sheet_name='Hatirlatmalar')
+                        if not df_h_file.empty:
+                            yeni_hatirlatmalar = []
+                            for _, h_row in df_h_file.iterrows():
+                                h_m = str(h_row.get("Hatırlatma Metni", "")).strip()
+                                h_z = str(h_row.get("Zaman", "")).strip()
+                                h_t_str = str(h_row.get("Tamamlandı", "")).strip().upper()
+                                if h_m and h_m != "nan":
+                                    yeni_hatirlatmalar.append({
+                                        "Metin": h_m,
+                                        "Zaman": h_z if h_z != "nan" else "",
+                                        "Tamamlandi": h_t_str in ["EVET", "TRUE", "1", "YES"]
+                                    })
+
+                    # 3. BÖLÜM SIRALAMASINI YÜKLE
+                    yeni_bolum_sirasi = mevcut_bolum_sirasi
+                    if 'Sistem_Ayarlari' in sheet_names:
+                        df_sys_file = pd.read_excel(excel_file, sheet_name='Sistem_Ayarlari')
+                        if not df_sys_file.empty and "Bölüm Sırası" in df_sys_file.columns:
+                            raw_sira = str(df_sys_file["Bölüm Sırası"].iloc[0]).strip()
+                            if raw_sira and raw_sira != "nan":
+                                parsed_sira = [b.strip() for b in raw_sira.split(",") if b.strip()]
+                                if parsed_sira:
+                                    yeni_bolum_sirasi = parsed_sira
+
+                    verileri_kaydet(kayitlar, yeni_notlar, yeni_hatirlatmalar, yeni_bolum_sirasi, f"Tam Yedek Yükleme: {eklenen} eklendi, {guncellenen} güncellendi.")
+                    st.success(f"🎉 Tam Yükleme Tamamlandı! ({eklenen} yeni dosya, {guncellenen} güncellenen dosya, notlar ve hatırlatmalar senkronize edildi)")
                     st.rerun()
 
             except Exception as e:
