@@ -82,29 +82,35 @@ st.markdown("""
         margin-bottom: 5px;
     }
 
-    /* YÖN KAYDIRMA VE TAŞIMA BUTONLARI */
+    /* MODERN, KÜÇÜK VE KALİTELİ TAŞIMA BUTONLARI */
     button[help*="Taş"], button[help*="Kaydır"] {
-        opacity: 0.3 !important;
-        color: #2563eb !important;
-        border: none !important;
-        background: transparent !important;
+        opacity: 0.85 !important;
+        color: #2563eb !important; /* Canlı Mavi */
+        border: 1px solid #bfdbfe !important; /* İnce Yumuşak Çerçeve */
+        background-color: #f0f9ff !important; /* İptal Etiketi Zemin Rengi */
         padding: 0px !important;
-        font-size: 0.65rem !important;
-        width: 16px !important;
-        height: 16px !important;
-        min-width: 16px !important;
-        min-height: 16px !important;
-        border-radius: 50% !important;
+        font-size: 0.70rem !important;
+        font-weight: bold !important;
+        width: 20px !important;
+        height: 20px !important;
+        min-width: 20px !important;
+        min-height: 20px !important;
+        border-radius: 6px !important; /* Hafif Yuvarlatılmış Köşeler */
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        transition: all 0.2s ease-in-out !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important; /* Hafif Derinlik Gölgesi */
+        transition: all 0.15s ease-in-out !important;
     }
+
+    /* Üzerine Gelindiğinde (Hover Stili) */
     button[help*="Taş"]:hover, button[help*="Kaydır"]:hover {
         opacity: 1.0 !important;
-        color: #1d4ed8 !important;
-        background-color: #eff6ff !important;
-        transform: scale(1.1) !important;
+        color: #ffffff !important;
+        background-color: #2563eb !important; /* Mavi Dolgu */
+        border-color: #1d4ed8 !important;
+        transform: translateY(-1px) !important; /* Hafif Yükselme Efekti */
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25) !important;
     }
 
     /* DURUMU KAYDET BUTONU */
