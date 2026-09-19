@@ -780,38 +780,6 @@
       "IncelemedeSiraNo": 9999
     },
     {
-      "Dosya No": "2022/D1-05368",
-      "Firma": "Bekap",
-      "Aciklama": "ön inceleme yapıldı/( Eksikler) tespit edilerek 14.08.2026  tarihinde firmaya iletildi",
-      "OlusturmaTarihi": "2026-08-14 11:49:36",
-      "Islemler": [
-        {
-          "Tarih": "14.08.2026 12:00",
-          "Islem": "Firmaya (Zühre hanıma) mail atıldı"
-        },
-        {
-          "Tarih": "28.08.2026 10:57",
-          "Islem": "iigü makbuz geldi.ekspertiz hazırlanıyormuş"
-        },
-        {
-          "Tarih": "28.08.2026 11:00",
-          "Islem": "iigü beyannamesi istendi."
-        }
-      ],
-      "BagliDosya": false,
-      "KapatmaRed": false,
-      "TescildeBekleyen": false,
-      "KapatmaAsamasinda": false,
-      "YaziCevabiBekleyen": false,
-      "Incelenmedi": false,
-      "Incelemede": false,
-      "MailAtildi": true,
-      "MailTarihi": "14.08.2026",
-      "SiraNo": 9999,
-      "IncelenmediSiraNo": 9999,
-      "IncelemedeSiraNo": 9999
-    },
-    {
       "Dosya No": "2022 D1 5368",
       "Firma": "Bekap",
       "Aciklama": "ön inceleme yapıldı/( Eksikler) tespit edilerek 14.08.2026  tarihinde firmaya iletildi",
