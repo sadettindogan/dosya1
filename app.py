@@ -43,6 +43,13 @@ st.markdown("""
         margin-bottom: 0.2rem !important;
     }
 
+    /* Kart İçindeki Yazı Boyutunu Küçültme ve Sıkışmayı Önleme */
+    small, small b, small code {
+        font-size: 0.65rem !important;
+        line-height: 1.1 !important;
+        white-space: nowrap !important;
+    }
+
     /* Dijital Saat Stili */
     .digital-clock {
         font-family: 'Courier New', Courier, monospace;
@@ -82,35 +89,43 @@ st.markdown("""
         margin-bottom: 5px;
     }
 
-    /* MODERN, KÜÇÜK VE KALİTELİ TAŞIMA BUTONLARI */
+    /* MODERN, KÜÇÜK VE BARIŞIK YÖN/TAŞIMA BUTONLARI (OKLAR NET GÖRÜNÜR) */
     button[help*="Taş"], button[help*="Kaydır"] {
-        opacity: 0.85 !important;
-        color: #2563eb !important; /* Canlı Mavi */
-        border: 1px solid #bfdbfe !important; /* İnce Yumuşak Çerçeve */
-        background-color: #f0f9ff !important; /* İptal Etiketi Zemin Rengi */
+        opacity: 1.0 !important;
         padding: 0px !important;
-        font-size: 0.70rem !important;
-        font-weight: bold !important;
-        width: 20px !important;
-        height: 20px !important;
-        min-width: 20px !important;
-        min-height: 20px !important;
-        border-radius: 6px !important; /* Hafif Yuvarlatılmış Köşeler */
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important; /* Hafif Derinlik Gölgesi */
+        width: 18px !important;
+        height: 18px !important;
+        min-width: 18px !important;
+        min-height: 18px !important;
+        border-radius: 4px !important;
+        border: 1px solid #bfdbfe !important;
+        background-color: #f0f9ff !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
         transition: all 0.15s ease-in-out !important;
+    }
+
+    /* Buton İçindeki Metin ve İkon Stili (Okların Görünmesini Sağlar) */
+    button[help*="Taş"] p, button[help*="Kaydır"] p,
+    button[help*="Taş"] span, button[help*="Kaydır"] span {
+        color: #1d4ed8 !important;
+        font-size: 0.65rem !important;
+        font-weight: 900 !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
     }
 
     /* Üzerine Gelindiğinde (Hover Stili) */
     button[help*="Taş"]:hover, button[help*="Kaydır"]:hover {
-        opacity: 1.0 !important;
-        color: #ffffff !important;
-        background-color: #2563eb !important; /* Mavi Dolgu */
+        background-color: #2563eb !important;
         border-color: #1d4ed8 !important;
-        transform: translateY(-1px) !important; /* Hafif Yükselme Efekti */
-        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    button[help*="Taş"]:hover p, button[help*="Kaydır"]:hover p,
+    button[help*="Taş"]:hover span, button[help*="Kaydır"]:hover span {
+        color: #ffffff !important;
     }
 
     /* DURUMU KAYDET BUTONU */
@@ -316,9 +331,9 @@ def liste_siralama_render(filtre_anahtar, sira_anahtar, baslik_metni, baslik_emo
                 d_no = dosya.get("Dosya No", "")
                 firma = dosya.get("Firma", "-")
                 
-                c_txt, c_up, c_down = st.columns([72, 14, 14], vertical_alignment="center")
+                c_txt, c_up, c_down = st.columns([66, 17, 17], vertical_alignment="center")
                 with c_txt:
-                    st.markdown(f"<small><b>{idx + 1}.</b> <code>{d_no}</code> | {firma[:12]}</small>", unsafe_allow_html=True)
+                    st.markdown(f"<small><b>{idx + 1}.</b> <code>{d_no}</code><br>{firma[:10]}</small>", unsafe_allow_html=True)
                 
                 with c_up:
                     if st.button("▲", key=f"btn_up_{bolum_kodu}_{d_no}_{idx}", help="Yukarı Taş"):
