@@ -585,52 +585,7 @@ col_left, col_right = st.columns([60, 40], gap="large")
 with col_left:
     st.subheader("📋 Kayıtlı Dosyalar ve İşlem Akışı")
     
-    search_col, exp_b_col = st.columns([3, 1])
-    with search_col:
-        arama = st.text_input("🔍 Dosya No veya Firma ile Ara", "", placeholder="Örn: 2025 D1 5400 veya Firma Adı")
-
-    # --- B SİSTEMİ (DETAYLI BİREBİR EXCEL YEDEK İNDİR) ---
-    with exp_b_col:
-        st.write("")
-        if kayitlar:
-            export_b_list = []
-            for d in kayitlar:
-                # Tüm işlem geçmişini ayrıştırılabilir yapıda metne çeviriyoruz
-                islem_gecmisi_str = " | ".join([f"[{i.get('Tarih', '')}] {i.get('Metin', '')}" for i in d.get("Islemler", [])])
-                
-                export_b_list.append({
-                    "Dosya No": d.get("Dosya No", ""),
-                    "Firma": d.get("Firma", "-"),
-                    "Açıklama": d.get("Aciklama", ""),
-                    "Oluşturma Tarihi": d.get("OlusturmaTarihi", ""),
-                    "İşlem Geçmişi": islem_gecmisi_str,
-                    "Bağlı Dosya": "EVET" if d.get("BagliDosya") else "HAYIR",
-                    "Kapatma Red": "EVET" if d.get("KapatmaRed") else "HAYIR",
-                    "Tescilde Bekleyen": "EVET" if d.get("TescildeBekleyen") else "HAYIR",
-                    "Kapatma Aşamasında": "EVET" if d.get("KapatmaAsamasinda") else "HAYIR",
-                    "Yazı Cevabı Bekleyen": "EVET" if d.get("YaziCevabiBekleyen") else "HAYIR",
-                    "İncelenmedi": "EVET" if d.get("Incelenmedi") else "HAYIR",
-                    "İncelemede": "EVET" if d.get("Incelemede") else "HAYIR",
-                    "Mail Atıldı": "EVET" if d.get("MailAtildi") else "HAYIR",
-                    "Mail Tarihi": d.get("MailTarihi", ""),
-                    "Sıra No": d.get("SiraNo", 9999),
-                    "İncelenmedi Sıra No": d.get("IncelenmediSiraNo", 9999),
-                    "İncelemede Sıra No": d.get("IncelemedeSiraNo", 9999)
-                })
-            df_export_b = pd.DataFrame(export_b_list)
-            
-            out_b = io.BytesIO()
-            with pd.ExcelWriter(out_b, engine='xlsxwriter') as writer:
-                df_export_b.to_excel(writer, index=False, sheet_name='Sistem_Yedegi')
-            excel_b_data = out_b.getvalue()
-            
-            st.download_button(
-                label="📥 Excel Yedeği İndir",
-                data=excel_b_data,
-                file_name=f"site_yedegi_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
-            )
+    arama = st.text_input("🔍 Dosya No veya Firma ile Ara", "", placeholder="Örn: 2025 D1 5400 veya Firma Adı")
 
     if kayitlar:
         sirali_dosyalar = sorted(kayitlar, key=lambda x: x.get("OlusturmaTarihi", ""), reverse=True)
@@ -808,12 +763,12 @@ with col_left:
         st.info("Sistemde henüz kayıtlı dosya bulunmuyor.")
 
 # ==============================================================================
-# SAĞ TARAF: YENİ DOSYA EKLEME VEYA BİRERBİR EXCEL YÜKLEME
+# SAĞ TARAF: YENİ DOSYA EKLEME VE YEDEK İŞLEMLERİ (İNDİR / YÜKLE)
 # ==============================================================================
 with col_right:
-    st.subheader("➕ Yeni Dosya Ekle / Yükle")
+    st.subheader("➕ Yeni Dosya Ekle / Yedek İşlemleri")
     
-    tab1, tab2 = st.tabs(["📝 Tekli Dosya Ekle", "📊 Toplu Excel Yükle"])
+    tab1, tab2 = st.tabs(["📝 Tekli Dosya Ekle", "📊 Yedek İşlemleri (Excel)"])
     
     with tab1:
         with st.form(key="form_tekli_dosya", clear_on_submit=True):
@@ -856,19 +811,65 @@ with col_right:
                     st.warning("Lütfen Dosya No alanını doldurun.")
 
     with tab2:
-        st.write("Siteden indirdiğiniz **Excel yedeğini** seçerek sistemdeki tüm dosya ve durumları tam haliyle geri yükleyebilirsiniz.")
+        st.markdown("### 📥 1. Sistem Yedeğini İndir")
+        st.caption("Sitedeki tüm dosyaları, işlem geçmişlerini ve bayrak durumlarını Excel olarak indirir.")
         
-        uploaded_file = st.file_uploader("Excel Dosyası Seçin (.xlsx)", type=["xlsx", "xls"])
+        if kayitlar:
+            export_b_list = []
+            for d in kayitlar:
+                islem_gecmisi_str = " | ".join([f"[{i.get('Tarih', '')}] {i.get('Metin', '')}" for i in d.get("Islemler", [])])
+                
+                export_b_list.append({
+                    "Dosya No": d.get("Dosya No", ""),
+                    "Firma": d.get("Firma", "-"),
+                    "Açıklama": d.get("Aciklama", ""),
+                    "Oluşturma Tarihi": d.get("OlusturmaTarihi", ""),
+                    "İşlem Geçmişi": islem_gecmisi_str,
+                    "Bağlı Dosya": "EVET" if d.get("BagliDosya") else "HAYIR",
+                    "Kapatma Red": "EVET" if d.get("KapatmaRed") else "HAYIR",
+                    "Tescilde Bekleyen": "EVET" if d.get("TescildeBekleyen") else "HAYIR",
+                    "Kapatma Aşamasında": "EVET" if d.get("KapatmaAsamasinda") else "HAYIR",
+                    "Yazı Cevabı Bekleyen": "EVET" if d.get("YaziCevabiBekleyen") else "HAYIR",
+                    "İncelenmedi": "EVET" if d.get("Incelenmedi") else "HAYIR",
+                    "İncelemede": "EVET" if d.get("Incelemede") else "HAYIR",
+                    "Mail Atıldı": "EVET" if d.get("MailAtildi") else "HAYIR",
+                    "Mail Tarihi": d.get("MailTarihi", ""),
+                    "Sıra No": d.get("SiraNo", 9999),
+                    "İncelenmedi Sıra No": d.get("IncelenmediSiraNo", 9999),
+                    "İncelemede Sıra No": d.get("IncelemedeSiraNo", 9999)
+                })
+            df_export_b = pd.DataFrame(export_b_list)
+            
+            out_b = io.BytesIO()
+            with pd.ExcelWriter(out_b, engine='xlsxwriter') as writer:
+                df_export_b.to_excel(writer, index=False, sheet_name='Sistem_Yedegi')
+            excel_b_data = out_b.getvalue()
+            
+            st.download_button(
+                label="📥 Excel Yedeğini Bilgisayara İndir",
+                data=excel_b_data,
+                file_name=f"site_yedegi_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
+        else:
+            st.info("İndirilecek kayıtlı dosya bulunmuyor.")
+
+        st.markdown("---")
+        
+        st.markdown("### 📤 2. Excel Yedeğini Geri Yükle")
+        st.caption("Daha önce indirdiğiniz yedek Excel dosyasını seçerek siteyi o haline geri getirebilirsiniz.")
+        
+        uploaded_file = st.file_uploader("Yedek Excel Dosyası Seçin (.xlsx)", type=["xlsx", "xls"])
         
         if uploaded_file is not None:
             try:
                 df_std = pd.read_excel(uploaded_file)
-                st.dataframe(df_std.head(10), use_container_width=True)
+                st.dataframe(df_std.head(5), use_container_width=True)
                 
-                if st.button("🚀 Excel Verilerini Yükle / Güncelle", type="primary", use_container_width=True):
+                if st.button("🚀 Excel Yedeğini Sisteme Yükle", type="primary", use_container_width=True):
                     eklenen, guncellenen = 0, 0
                     
-                    # Kolon İsimlerini Otomatik Algılama
                     dno_col = next((c for c in df_std.columns if "dosya" in str(c).lower()), df_std.columns[0])
                     firma_col = next((c for c in df_std.columns if "firma" in str(c).lower()), None)
                     ack_col = next((c for c in df_std.columns if "açıklama" in str(c).lower() or "aciklama" in str(c).lower()), None)
@@ -902,7 +903,6 @@ with col_right:
                         olusturma_val = str(row[olusturma_col]).strip() if olusturma_col and pd.notna(row[olusturma_col]) else simdi_dt.strftime("%Y-%m-%d %H:%M:%S")
                         mail_tarihi_val = str(row[mail_tarihi_col]).strip() if mail_tarihi_col and pd.notna(row[mail_tarihi_col]) else ""
 
-                        # İşlem Geçmişi Metnini Tekrar Obje Dizisine Dönüştürme
                         islemler_listesi = []
                         if islem_col and pd.notna(row[islem_col]):
                             raw_islem_str = str(row[islem_col]).strip()
