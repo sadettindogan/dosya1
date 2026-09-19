@@ -683,7 +683,7 @@ with col_left:
 with col_right:
     st.subheader("➕ Yeni Dosya Ekle / Yedek İşlemleri")
     
-    tab1, tab2 = st.tabs(["📝 Tekli Dosya Ekle", "📊 Yedek İşlemleri (Excel)"])
+    tab1, tab2 = st.tabs(["📝 Tekli Dosya Ekle", "📊 Yedek ve Toplu Güncelleme"])
     
     with tab1:
         with st.form(key="form_tekli_dosya", clear_on_submit=True):
@@ -792,10 +792,10 @@ with col_right:
 
         st.markdown("---")
         
-        st.markdown("### 📤 2. Excel Yedeğini Geri Yükle")
-        st.caption("Daha önce indirdiğiniz tam sistem Excel yedeğini seçerek siteyi o haline geri getirebilirsiniz.")
+        st.markdown("### 📤 2. Excel Yükle / Açıklama Güncelle")
+        st.caption("Tam yedek dosyasını veya sadece 'Dosya No' ve 'Açıklama' içeren özel listenizi yükleyebilirsiniz. Var olan dosyaların sadece girilen bilgileri güncellenir; diğer bayraklar, sıralamalar ve işlem geçmişleri korunur.")
         
-        uploaded_file = st.file_uploader("Yedek Excel Dosyası Seçin (.xlsx)", type=["xlsx", "xls"])
+        uploaded_file = st.file_uploader("Excel Dosyası Seçin (.xlsx)", type=["xlsx", "xls"])
         
         if uploaded_file is not None:
             try:
@@ -806,9 +806,10 @@ with col_right:
                 st.write("**📄 Dosyalar Önizleme:**")
                 st.dataframe(df_std.head(3), use_container_width=True)
                 
-                if st.button("🚀 Excel Yedeğini Sisteme Yükle", type="primary", use_container_width=True):
+                if st.button("🚀 Excel Verilerini Sisteme İşle", type="primary", use_container_width=True):
                     eklenen, guncellenen = 0, 0
                     
+                    # Sütunları tespit et
                     dno_col = next((c for c in df_std.columns if "dosya" in str(c).lower()), df_std.columns[0])
                     firma_col = next((c for c in df_std.columns if "firma" in str(c).lower()), None)
                     ack_col = next((c for c in df_std.columns if "açıklama" in str(c).lower() or "aciklama" in str(c).lower()), None)
@@ -816,36 +817,40 @@ with col_right:
                     olusturma_col = next((c for c in df_std.columns if "oluşturma" in str(c).lower() or "olusturma" in str(c).lower()), None)
                     mail_tarihi_col = next((c for c in df_std.columns if "mail tarihi" in str(c).lower()), None)
 
-                    def parse_bool(col_kw, r):
+                    def parse_bool(col_kw, r, current_val=False):
                         col_name = next((c for c in df_std.columns if col_kw in str(c).lower()), None)
                         if col_name and pd.notna(r[col_name]):
                             val = str(r[col_name]).strip().upper()
                             return val in ["EVET", "TRUE", "1", "YES"]
-                        return False
+                        return current_val
 
-                    def parse_int(col_kw, r, default_val=9999):
+                    def parse_int(col_kw, r, current_val=9999):
                         col_name = next((c for c in df_std.columns if col_kw in str(c).lower()), None)
                         if col_name and pd.notna(r[col_name]):
                             try:
                                 return int(r[col_name])
                             except Exception:
-                                return default_val
-                        return default_val
+                                return current_val
+                        return current_val
 
                     for _, row in df_std.iterrows():
                         d_no = str(row[dno_col]).strip()
                         if not d_no or d_no.lower() == "nan":
                             continue
-                            
-                        firma_val = str(row[firma_col]).strip() if firma_col and pd.notna(row[firma_col]) else "-"
-                        aciklama_val = str(row[ack_col]).strip() if ack_col and pd.notna(row[ack_col]) else ""
-                        olusturma_val = str(row[olusturma_col]).strip() if olusturma_col and pd.notna(row[olusturma_col]) else simdi_dt.strftime("%Y-%m-%d %H:%M:%S")
-                        mail_tarihi_val = str(row[mail_tarihi_col]).strip() if mail_tarihi_col and pd.notna(row[mail_tarihi_col]) else ""
 
-                        islemler_listesi = []
+                        bulunan_dosya = next((d for d in kayitlar if d.get("Dosya No") == d_no), None)
+
+                        # Sadece sütun Excel'de varsa ve boş değilse değerini oku
+                        firma_val = str(row[firma_col]).strip() if firma_col and pd.notna(row[firma_col]) else None
+                        aciklama_val = str(row[ack_col]).strip() if ack_col and pd.notna(row[ack_col]) else None
+                        olusturma_val = str(row[olusturma_col]).strip() if olusturma_col and pd.notna(row[olusturma_col]) else None
+                        mail_tarihi_val = str(row[mail_tarihi_col]).strip() if mail_tarihi_col and pd.notna(row[mail_tarihi_col]) else None
+
+                        islemler_listesi = None
                         if islem_col and pd.notna(row[islem_col]):
                             raw_islem_str = str(row[islem_col]).strip()
                             if raw_islem_str:
+                                islemler_listesi = []
                                 parcalar = raw_islem_str.split(" | ")
                                 for p in parcalar:
                                     p = p.strip()
@@ -856,57 +861,62 @@ with col_right:
                                     elif p:
                                         islemler_listesi.append({"Tarih": simdi_dt.strftime("%d.%m.%Y %H:%M"), "Metin": p})
 
-                        bulunan_dosya = next((d for d in kayitlar if d.get("Dosya No") == d_no), None)
-                        
                         if bulunan_dosya:
-                            bulunan_dosya['Aciklama'] = aciklama_val
-                            if firma_val != "-": bulunan_dosya['Firma'] = firma_val
-                            if islemler_listesi: bulunan_dosya['Islemler'] = islemler_listesi
-                            
-                            bulunan_dosya['BagliDosya'] = parse_bool("bağlı", row)
-                            bulunan_dosya['KapatmaRed'] = parse_bool("red", row)
-                            bulunan_dosya['TescildeBekleyen'] = parse_bool("tescilde", row)
-                            bulunan_dosya['KapatmaAsamasinda'] = parse_bool("kapatma", row)
-                            bulunan_dosya['YaziCevabiBekleyen'] = parse_bool("yazı", row)
-                            bulunan_dosya['Incelenmedi'] = parse_bool("incelenmedi", row)
-                            bulunan_dosya['Incelemede'] = parse_bool("incelemede", row)
-                            bulunan_dosya['MailAtildi'] = parse_bool("mail", row)
-                            bulunan_dosya['MailTarihi'] = mail_tarihi_val
-                            
-                            bulunan_dosya['SiraNo'] = parse_int("sıra no", row)
-                            bulunan_dosya['IncelenmediSiraNo'] = parse_int("incelenmedi sıra", row)
-                            bulunan_dosya['IncelemedeSiraNo'] = parse_int("incelemede sıra", row)
-                            bulunan_dosya['BagliSiraNo'] = parse_int("bağlı sıra", row)
-                            bulunan_dosya['KapatmaRedSiraNo'] = parse_int("red sıra", row)
-                            bulunan_dosya['TescildeSiraNo'] = parse_int("tescilde sıra", row)
-                            bulunan_dosya['YaziCevabiSiraNo'] = parse_int("yazı cevap sıra", row)
-                            bulunan_dosya['MailAtildiSiraNo'] = parse_int("mail atıldı sıra", row)
+                            # MEVCUT DOSYA GÜNCELLEME (Diğer alanlar korunur)
+                            if aciklama_val is not None:
+                                bulunan_dosya['Aciklama'] = aciklama_val
+                            if firma_val is not None:
+                                bulunan_dosya['Firma'] = firma_val
+                            if islemler_listesi is not None:
+                                bulunan_dosya['Islemler'] = islemler_listesi
+                            if mail_tarihi_val is not None:
+                                bulunan_dosya['MailTarihi'] = mail_tarihi_val
+
+                            # Eğer bayrak sütunları Excel'de varsa güncelle, yoksa eski haline dokunma
+                            bulunan_dosya['BagliDosya'] = parse_bool("bağlı", row, bulunan_dosya.get('BagliDosya', False))
+                            bulunan_dosya['KapatmaRed'] = parse_bool("red", row, bulunan_dosya.get('KapatmaRed', False))
+                            bulunan_dosya['TescildeBekleyen'] = parse_bool("tescilde", row, bulunan_dosya.get('TescildeBekleyen', False))
+                            bulunan_dosya['KapatmaAsamasinda'] = parse_bool("kapatma", row, bulunan_dosya.get('KapatmaAsamasinda', False))
+                            bulunan_dosya['YaziCevabiBekleyen'] = parse_bool("yazı", row, bulunan_dosya.get('YaziCevabiBekleyen', False))
+                            bulunan_dosya['Incelenmedi'] = parse_bool("incelenmedi", row, bulunan_dosya.get('Incelenmedi', False))
+                            bulunan_dosya['Incelemede'] = parse_bool("incelemede", row, bulunan_dosya.get('Incelemede', False))
+                            bulunan_dosya['MailAtildi'] = parse_bool("mail", row, bulunan_dosya.get('MailAtildi', False))
+
+                            bulunan_dosya['SiraNo'] = parse_int("sıra no", row, bulunan_dosya.get('SiraNo', 9999))
+                            bulunan_dosya['IncelenmediSiraNo'] = parse_int("incelenmedi sıra", row, bulunan_dosya.get('IncelenmediSiraNo', 9999))
+                            bulunan_dosya['IncelemedeSiraNo'] = parse_int("incelemede sıra", row, bulunan_dosya.get('IncelemedeSiraNo', 9999))
+                            bulunan_dosya['BagliSiraNo'] = parse_int("bağlı sıra", row, bulunan_dosya.get('BagliSiraNo', 9999))
+                            bulunan_dosya['KapatmaRedSiraNo'] = parse_int("red sıra", row, bulunan_dosya.get('KapatmaRedSiraNo', 9999))
+                            bulunan_dosya['TescildeSiraNo'] = parse_int("tescilde sıra", row, bulunan_dosya.get('TescildeSiraNo', 9999))
+                            bulunan_dosya['YaziCevabiSiraNo'] = parse_int("yazı cevap sıra", row, bulunan_dosya.get('YaziCevabiSiraNo', 9999))
+                            bulunan_dosya['MailAtildiSiraNo'] = parse_int("mail atıldı sıra", row, bulunan_dosya.get('MailAtildiSiraNo', 9999))
                             
                             guncellenen += 1
                         else:
+                            # SİSTEMDE OLMAYAN YENİ DOSYA EKLEME
                             yeni_d = {
                                 "Dosya No": d_no,
-                                "Firma": firma_val,
-                                "Aciklama": aciklama_val,
-                                "OlusturmaTarihi": olusturma_val,
-                                "Islemler": islemler_listesi,
-                                "BagliDosya": parse_bool("bağlı", row),
-                                "KapatmaRed": parse_bool("red", row),
-                                "TescildeBekleyen": parse_bool("tescilde", row),
-                                "KapatmaAsamasinda": parse_bool("kapatma", row),
-                                "YaziCevabiBekleyen": parse_bool("yazı", row),
-                                "Incelenmedi": parse_bool("incelenmedi", row),
-                                "Incelemede": parse_bool("incelemede", row),
-                                "MailAtildi": parse_bool("mail", row),
-                                "MailTarihi": mail_tarihi_val,
-                                "SiraNo": parse_int("sıra no", row),
-                                "IncelenmediSiraNo": parse_int("incelenmedi sıra", row),
-                                "IncelemedeSiraNo": parse_int("incelemede sıra", row),
-                                "BagliSiraNo": parse_int("bağlı sıra", row),
-                                "KapatmaRedSiraNo": parse_int("red sıra", row),
-                                "TescildeSiraNo": parse_int("tescilde sıra", row),
-                                "YaziCevabiSiraNo": parse_int("yazı cevap sıra", row),
-                                "MailAtildiSiraNo": parse_int("mail atıldı sıra", row)
+                                "Firma": firma_val if firma_val is not None else "-",
+                                "Aciklama": aciklama_val if aciklama_val is not None else "",
+                                "OlusturmaTarihi": olusturma_val if olusturma_val is not None else simdi_dt.strftime("%Y-%m-%d %H:%M:%S"),
+                                "Islemler": islemler_listesi if islemler_listesi is not None else [],
+                                "BagliDosya": parse_bool("bağlı", row, False),
+                                "KapatmaRed": parse_bool("red", row, False),
+                                "TescildeBekleyen": parse_bool("tescilde", row, False),
+                                "KapatmaAsamasinda": parse_bool("kapatma", row, False),
+                                "YaziCevabiBekleyen": parse_bool("yazı", row, False),
+                                "Incelenmedi": parse_bool("incelenmedi", row, False),
+                                "Incelemede": parse_bool("incelemede", row, False),
+                                "MailAtildi": parse_bool("mail", row, False),
+                                "MailTarihi": mail_tarihi_val if mail_tarihi_val is not None else "",
+                                "SiraNo": parse_int("sıra no", row, 9999),
+                                "IncelenmediSiraNo": parse_int("incelenmedi sıra", row, 9999),
+                                "IncelemedeSiraNo": parse_int("incelemede sıra", row, 9999),
+                                "BagliSiraNo": parse_int("bağlı sıra", row, 9999),
+                                "KapatmaRedSiraNo": parse_int("red sıra", row, 9999),
+                                "TescildeSiraNo": parse_int("tescilde sıra", row, 9999),
+                                "YaziCevabiSiraNo": parse_int("yazı cevap sıra", row, 9999),
+                                "MailAtildiSiraNo": parse_int("mail atıldı sıra", row, 9999)
                             }
                             kayitlar.append(yeni_d)
                             eklenen += 1
@@ -944,8 +954,8 @@ with col_right:
                                 if parsed_sira:
                                     yeni_bolum_sirasi = parsed_sira
 
-                    verileri_kaydet(kayitlar, yeni_notlar, yeni_hatirlatmalar, yeni_bolum_sirasi, f"Tam Yedek Yükleme: {eklenen} eklendi, {guncellenen} güncellendi.")
-                    st.success(f"🎉 Tam Yükleme Tamamlandı!")
+                    verileri_kaydet(kayitlar, yeni_notlar, yeni_hatirlatmalar, yeni_bolum_sirasi, f"Excel İşleme: {eklenen} yeni eklendi, {guncellenen} dosya güncellendi.")
+                    st.success(f"🎉 İşlem Başarılı! ({guncellenen} dosya güncellendi, {eklenen} yeni dosya eklendi)")
                     st.rerun()
 
             except Exception as e:
