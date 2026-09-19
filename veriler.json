@@ -369,7 +369,7 @@
       "BagliDosya": false,
       "KapatmaRed": true,
       "TescildeBekleyen": false,
-      "KapatmaAsamasinda": true,
+      "KapatmaAsamasinda": false,
       "YaziCevabiBekleyen": false,
       "Incelenmedi": false,
       "MailAtildi": false,
