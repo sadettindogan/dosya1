@@ -1045,6 +1045,30 @@
       "TescildeSiraNo": 9999,
       "YaziCevabiSiraNo": 9999,
       "MailAtildiSiraNo": 9999
+    },
+    {
+      "Dosya No": "2025 D1 5279",
+      "Firma": "ÇEL-MER ÇELİK",
+      "Aciklama": "Sarfiyatta açık var.",
+      "OlusturmaTarihi": "2026-09-23 16:51:26",
+      "Islemler": [],
+      "BagliDosya": false,
+      "KapatmaRed": false,
+      "TescildeBekleyen": false,
+      "KapatmaAsamasinda": false,
+      "YaziCevabiBekleyen": false,
+      "Incelenmedi": false,
+      "Incelemede": false,
+      "MailAtildi": false,
+      "MailTarihi": "",
+      "SiraNo": 9999,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999,
+      "BagliSiraNo": 9999,
+      "KapatmaRedSiraNo": 9999,
+      "TescildeSiraNo": 9999,
+      "YaziCevabiSiraNo": 9999,
+      "MailAtildiSiraNo": 9999
     }
   ],
   "OnemliNotlar": [
