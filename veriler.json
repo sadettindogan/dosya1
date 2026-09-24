@@ -462,39 +462,6 @@
       "MailAtildiSiraNo": 9999
     },
     {
-      "Dosya No": "2022 D1 2650",
-      "Firma": "HASCELIK SAN.VE TIC.A.S.",
-      "Aciklama": "İhracat yaparak 24.07.2026 da tekrar kapatma talebi yaptığından TEV hesabı ve kontrolü tekrar yapılması gerekmiş olup, kapatma aşamasındadır.",
-      "OlusturmaTarihi": "2026-08-12 12:03:48",
-      "Islemler": [
-        {
-          "Tarih": "13.08.2026",
-          "Not": "Tev Tablosunu gönderecek düzeltme yapacağım"
-        },
-        {
-          "Tarih": "14.08.2026 11:52",
-          "Islem": "maile yanıt geldi"
-        }
-      ],
-      "BagliDosya": false,
-      "KapatmaRed": false,
-      "TescildeBekleyen": false,
-      "KapatmaAsamasinda": true,
-      "YaziCevabiBekleyen": false,
-      "Incelenmedi": false,
-      "MailAtildi": false,
-      "MailTarihi": "",
-      "SiraNo": 1,
-      "Incelemede": false,
-      "IncelenmediSiraNo": 9999,
-      "IncelemedeSiraNo": 9999,
-      "BagliSiraNo": 9999,
-      "KapatmaRedSiraNo": 9999,
-      "TescildeSiraNo": 9999,
-      "YaziCevabiSiraNo": 9999,
-      "MailAtildiSiraNo": 9999
-    },
-    {
       "Dosya No": "2023 D1 1075",
       "Firma": "EREGLİ DEMİR VE ÇELİK FABRİKALARI. TİC. A.Ş.",
       "Aciklama": "16 belgeye bağlı olup kapanmayan belgeler mevcuttur.",
