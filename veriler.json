@@ -245,7 +245,12 @@
       "Firma": "ERCİYAS ÇELİK BORU SANAYİ A.Ş",
       "Aciklama": "28.08.2025 de tekrar kapatma başvurusu yapmıştır.İncelenmedi.",
       "OlusturmaTarihi": "2026-08-12 12:03:48",
-      "Islemler": [],
+      "Islemler": [
+        {
+          "Tarih": "25.09.2026 10:44",
+          "Metin": "25.09.2026 da Nur Acun aradı inceleyip dönüş yapacağım dedim."
+        }
+      ],
       "BagliDosya": false,
       "KapatmaRed": false,
       "TescildeBekleyen": false,
