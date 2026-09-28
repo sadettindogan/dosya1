@@ -571,7 +571,12 @@
       "Firma": "POSCO ASSAN TST ÇEL.SAN. A.Ş",
       "Aciklama": "Kapatma aşamasındadır.",
       "OlusturmaTarihi": "2026-08-12 12:03:48",
-      "Islemler": [],
+      "Islemler": [
+        {
+          "Tarih": "28.09.2026 14:27",
+          "Metin": "tescilde bekleyen beyanname için Ahmet beye mail atıldı."
+        }
+      ],
       "BagliDosya": false,
       "KapatmaRed": false,
       "TescildeBekleyen": false,
