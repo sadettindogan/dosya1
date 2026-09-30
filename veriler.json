@@ -930,6 +930,30 @@
       "TescildeSiraNo": 9999,
       "YaziCevabiSiraNo": 9999,
       "MailAtildiSiraNo": 9999
+    },
+    {
+      "Dosya No": "2025 D1 3276",
+      "Firma": "Beksan",
+      "Aciklama": "30.09.2026 incelendi.Mail atıldı.",
+      "OlusturmaTarihi": "2026-09-30 14:51:33",
+      "Islemler": [],
+      "BagliDosya": false,
+      "KapatmaRed": false,
+      "TescildeBekleyen": false,
+      "KapatmaAsamasinda": false,
+      "YaziCevabiBekleyen": false,
+      "Incelenmedi": false,
+      "Incelemede": false,
+      "MailAtildi": false,
+      "MailTarihi": "",
+      "SiraNo": 9999,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999,
+      "BagliSiraNo": 9999,
+      "KapatmaRedSiraNo": 9999,
+      "TescildeSiraNo": 9999,
+      "YaziCevabiSiraNo": 9999,
+      "MailAtildiSiraNo": 9999
     }
   ],
   "OnemliNotlar": [
