@@ -221,7 +221,12 @@
       "Firma": "VİRTUS AMBALAJ ÇELİK SANAYİ VE TİCARET A.Ş.",
       "Aciklama": "Eksiklik yazıldı.",
       "OlusturmaTarihi": "2026-08-12 12:03:48",
-      "Islemler": [],
+      "Islemler": [
+        {
+          "Tarih": "08.10.2026 15:54",
+          "Metin": "Eksiklik yazıldı."
+        }
+      ],
       "BagliDosya": false,
       "KapatmaRed": false,
       "TescildeBekleyen": false,
