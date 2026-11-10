@@ -903,6 +903,30 @@
       "TescildeSiraNo": 9999,
       "YaziCevabiSiraNo": 9999,
       "MailAtildiSiraNo": 9999
+    },
+    {
+      "Dosya No": "2024/D1-04286",
+      "Firma": "TECASA ISI KONTROL ANONİM ŞİRKETİ",
+      "Aciklama": "resen dosya yazı yazılacak",
+      "OlusturmaTarihi": "2026-11-10 10:59:15",
+      "Islemler": [],
+      "BagliDosya": false,
+      "KapatmaRed": false,
+      "TescildeBekleyen": false,
+      "KapatmaAsamasinda": false,
+      "YaziCevabiBekleyen": false,
+      "Incelenmedi": false,
+      "Incelemede": false,
+      "MailAtildi": false,
+      "MailTarihi": "",
+      "SiraNo": 9999,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999,
+      "BagliSiraNo": 9999,
+      "KapatmaRedSiraNo": 9999,
+      "TescildeSiraNo": 9999,
+      "YaziCevabiSiraNo": 9999,
+      "MailAtildiSiraNo": 9999
     }
   ],
   "OnemliNotlar": [
