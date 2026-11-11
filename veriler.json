@@ -951,6 +951,30 @@
       "TescildeSiraNo": 9999,
       "YaziCevabiSiraNo": 9999,
       "MailAtildiSiraNo": 9999
+    },
+    {
+      "Dosya No": "2025/D1-00476",
+      "Firma": "Erkin Çelik",
+      "Aciklama": "e imzalı ymm raporu eksik mail atıldı.",
+      "OlusturmaTarihi": "2026-11-11 12:21:59",
+      "Islemler": [],
+      "BagliDosya": false,
+      "KapatmaRed": false,
+      "TescildeBekleyen": false,
+      "KapatmaAsamasinda": false,
+      "YaziCevabiBekleyen": false,
+      "Incelenmedi": false,
+      "Incelemede": false,
+      "MailAtildi": false,
+      "MailTarihi": "",
+      "SiraNo": 9999,
+      "IncelenmediSiraNo": 9999,
+      "IncelemedeSiraNo": 9999,
+      "BagliSiraNo": 9999,
+      "KapatmaRedSiraNo": 9999,
+      "TescildeSiraNo": 9999,
+      "YaziCevabiSiraNo": 9999,
+      "MailAtildiSiraNo": 9999
     }
   ],
   "OnemliNotlar": [
